@@ -2,6 +2,20 @@ from node import *
 from chunk import *
 import sys
 
+class BaseBufManBuilder(object):
+    def __init__(self):
+        pass
+
+    def buildBufMan(self, simu):
+        pass
+
+class NodeBuilderPerFlow(BaseNodeBuilder):
+    def buildBufMan(self, simu, node):
+        for nbr in node.getNbrList(): 
+            buf_man = LinkBufferManagerPerFlow(simu)
+            buf_man.attachNode(node)
+            node.
+
 class TrafficGenerator(object):
     ''' 
         Load the traffic profile from input file, generate corresponding events and insert them into sender's buffers.
@@ -10,7 +24,7 @@ class TrafficGenerator(object):
         self.src, self.dst = {}, {} # node_id : Node
         self.traff_file = traff_file
 
-    def parseTrafficFile(self, node_dic):
+    def parseTrafficFile(self, node_dic, simu):
         try:
             f = open(self.traff_file, 'r')
         except IOError as e:
@@ -33,8 +47,10 @@ class TrafficGenerator(object):
                 chk = Chunk(int(words[0]), int(words[1]), int(words[2]))
                 node = node_dic[src_id]
                 if not node.src:
-                    src = TrafficSrc(None)
-                    src.attachBufMan(BaseBufferManager())
+                    src = TrafficSrc(node, None)
+                    buf_man = AppBufferManager(simu)
+                    buf_man.attachNode(node)
+                    src.attachBufMan(buf_man)
                     node.attachSrc(src)
                 node.src.pushAppBuffer(chk)
 
@@ -48,7 +64,7 @@ class TopoGenerator(object):
         self.topo_file = topo_file
         self.node_dic = {}
          
-    def parseTopoFile(self):
+    def parseTopoFile(self, simu):
         try:
             f = open(self.topo_file, 'r')
         except IOError as e:
@@ -64,7 +80,9 @@ class TopoGenerator(object):
                 node_id = int(words[0])
                 if node_id not in self.node_dic:
                     node = Node(node_id, None)
-                    node.attachBufMan(BaseBufferManager())
+                    buf_man = BaseBufferManager(simu)
+                    buf_man.attachNode(node)
+                    node.attachBufMan(buf_man)
                     self.node_dic[node_id] = node
                 else:
                     node = self.node_dic[node_id]
@@ -78,7 +96,9 @@ class TopoGenerator(object):
                     nbr = None
                     if nbr_id not in self.node_dic:
                         nbr = Node(nbr_id, None)
-                        nbr.attachBufMan(BaseBufferManager())
+                        buf_man = BaseBufferManager(simu)
+                        buf_man.attachNode(nbr)
+                        nbr.attachBufMan(buf_man)
                         self.node_dic[nbr_id] = nbr
                     else:
                         nbr = self.node_dic[nbr_id] 
@@ -92,3 +112,5 @@ class TopoGenerator(object):
     def getNodeDic(self):
         return self.node_dic
 
+    def genRouteTable(self, simu):
+        pass
