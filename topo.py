@@ -3,18 +3,28 @@ from chunk import *
 import sys
 
 class BaseBufManBuilder(object):
+    band = 131072 # unit: byte per ms, == 1Gbps
+    lat = 10 # ms
     def __init__(self):
         pass
 
-    def buildBufMan(self, simu):
+    def buildBufMan(self, simu, node, if_id): # interface id, because each interface has a buf man
         pass
 
-class NodeBuilderPerFlow(BaseNodeBuilder):
-    def buildBufMan(self, simu, node):
-        for nbr in node.getNbrList(): 
-            buf_man = LinkBufferManagerPerFlow(simu)
-            buf_man.attachNode(node)
-            node.
+class BufManBuilderPerFlow(BaseBufManBuilder):
+    def buildBufMan(self, simu, node, if_id):
+        buf_man = LinkBufferManagerPerFlow(simu, if_id, BaseBufManBuilder.band, BaseBufManBuilder.lat)
+        buf_man.attachNode(node)
+        node.attachBufMan(buf_man)
+        node.addWeight(BaseBufManBuilder.lat) # by default, use latency as link weight
+
+class BufManBuilderPerIf(BaseBufManBuilder):
+    def buildBufMan(self, simu, node, if_id):
+        buf_man = LinkBufferManagerPerIf(simu, if_id, BaseBufManBuilder.band, BaseBufManBuilder.lat)
+        buf_man.attachNode(node)
+        node.attachBufMan(buf_man)
+        node.addWeight(BaseBufManBuilder.lat) # by default, use latency as link weight
+
 
 class TrafficGenerator(object):
     ''' 
@@ -48,7 +58,7 @@ class TrafficGenerator(object):
                 node = node_dic[src_id]
                 if not node.src:
                     src = TrafficSrc(node, None)
-                    buf_man = AppBufferManager(simu)
+                    buf_man = AppBufferManager(simu, 0)
                     buf_man.attachNode(node)
                     src.attachBufMan(buf_man)
                     node.attachSrc(src)
@@ -64,7 +74,7 @@ class TopoGenerator(object):
         self.topo_file = topo_file
         self.node_dic = {}
          
-    def parseTopoFile(self, simu):
+    def parseTopoFile(self, simu, buf_man_builder):
         try:
             f = open(self.topo_file, 'r')
         except IOError as e:
@@ -79,13 +89,15 @@ class TopoGenerator(object):
                 node = None
                 node_id = int(words[0])
                 if node_id not in self.node_dic:
-                    node = Node(node_id, None)
-                    buf_man = BaseBufferManager(simu)
-                    buf_man.attachNode(node)
-                    node.attachBufMan(buf_man)
-                    self.node_dic[node_id] = node
-                else:
-                    node = self.node_dic[node_id]
+                    self.node_dic[node_id] = Node(node_id, None)
+
+                    #buf_man = BaseBufferManager(simu)
+                    #buf_man.attachNode(node)
+                    #node.attachBufMan(buf_man)
+
+                    #self.node_dic[node_id] = node
+                node = self.node_dic[node_id]
+
                 for i in range(2, len(words)):
                     try:
                         nbr_id = int(words[i])
@@ -95,14 +107,16 @@ class TopoGenerator(object):
 
                     nbr = None
                     if nbr_id not in self.node_dic:
-                        nbr = Node(nbr_id, None)
-                        buf_man = BaseBufferManager(simu)
-                        buf_man.attachNode(nbr)
-                        nbr.attachBufMan(buf_man)
-                        self.node_dic[nbr_id] = nbr
-                    else:
-                        nbr = self.node_dic[nbr_id] 
+                        self.node_dic[nbr_id] = Node(nbr_id, None)
+                        #nbr = Node(nbr_id, None)
+                        #buf_man = BaseBufferManager(simu)
+                        #buf_man.attachNode(nbr)
+                        #nbr.attachBufMan(buf_man)
+                        #self.node_dic[nbr_id] = nbr
+                    nbr = self.node_dic[nbr_id] 
                     node.addNbr(nbr)
+                    buf_man_builder.buildBufMan(simu, node, nbr.id)
+
             except ValueError as e:
                 print "Value error({}): {1}"
                 print 'words' 
@@ -114,3 +128,7 @@ class TopoGenerator(object):
 
     def genRouteTable(self, simu):
         pass
+
+class LinkProfileInitializer(object):
+    DEFAULT_BANDWIDTH = 131072000 # 125*1024*1024, 1Gbps == 125MBps
+    LATENCY = 10 # ms

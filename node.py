@@ -8,18 +8,21 @@ class Node(object):
     the policy related logic (i.e. bufferMan and congCtrl, which tends to change) '''
     def __init__(self, node_id, cong_ctrl): # these two argument are base class references
         self.id = node_id
-        self.buf_man = None
         self.congctrl = cong_ctrl
 
         self.src = None
         self.sink = None
 
         self.nbrs = []
+        self.weights = [] # corresponding to each link where self is one of the vertices
+        self.buf_man = {} # next hop node id : buf_man. next_hop_id is in the meantime buf_man.id
+
         self.ifs = []
+        
 
     def attachBufMan(self, buf_man):
-        self.buf_man = buf_man
-        self.buf_man.attachNode(self)
+        self.buf_man[buf_man.id()] = buf_man
+        #self.buf_man.attachNode(self)
 
     def attachSrc(self, src):
         self.src = src
@@ -37,10 +40,16 @@ class Node(object):
     def receive(self, chunk):
         ''' a chunk will be enqueued at one of the buffers, by the link layer buffer manager. The chunk may come 
             from a higher layer buffer (app buffer), or from another node. '''
-        buf_man.enqueue(chunk)
+        print 'receive called'
+        pass
+        # determine the outgoing interface for this chunk, then call corresponding buf_man's enqueue
+
+        #self.buf_man.enqueue(chunk)
         
     def addNbr(self, nbr):
         self.nbrs.append(nbr)
+    def addWeight(self, weight):
+        self.weights.append(weight)
 
     def getNbrList(self):
         return self.nbrs
@@ -123,10 +132,14 @@ class LinkBuffer(BaseBuffer):
         pass
 
 class BaseBufferManager(object):
-    def __init__(self, simu):
+    def __init__(self, simu, id):
         self.node = None
+        self._id = id
         self.buffers = {}  # id : buffer, id means differently in different context: next hop, or dst id
         self.simulator = simu
+
+    def id(self):
+        return self._id
 
     def addBuffer(self, buf_id):
         self.buffers[buf_id] = BaseBuffer(self.node, buf_id)
@@ -171,8 +184,16 @@ class AppBufferManager(BaseBufferManager):
 
         self.buffers[dst_id].enqueue(chunk)
 
+class LinkBufferManager(BaseBufferManager):
+    def __init__(self, simu, id, band, lat):
+        super(LinkBufferManager, self).__init__(simu, id)
+        self._band = band # bandwidth
+        self._lat = lat # latency: between self.node and the next hop which this buffer is for
+    
+
 class LinkBufferManagerPerFlow(BaseBufferManager):
     def enqueue(self, chunk):
+        print 'linkBufManPerFlow: enqueue'
         dst_id = chunk.dst() 
         if dst_id not in self.buffers:
             self.addBuffer(dst_id)
@@ -184,6 +205,9 @@ class LinkBufferManagerPerFlow(BaseBufferManager):
             self.simulator.enqueue(evt)
 
         self.buffers[dst_id].enqueue(chunk)
+
+class LinkBufferManagerPerIf(BaseBufferManager):
+    pass
 
 class LinkBufferManagerPerIf(BaseBufferManager):
     ''' per interface queuing '''

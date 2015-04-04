@@ -25,12 +25,13 @@ class Simulator(object):
         #Simulator.queue = Queue.PriorityQueue()
 
         tp = TopoGenerator('/Users/SunnySky/workspace/cong-simu/input_files/topo_9nodes.txt')
-        tp.parseTopoFile(self)
+        tp.parseTopoFile(self, BufManBuilderPerFlow())
 
         self._node_dic = tp.getNodeDic()
         tf = TrafficGenerator('input_files/traff.txt')
         tf.parseTrafficFile(self._node_dic, self)
 
+        link_prof = LinkProfileInitializer()
 
     def enqueue(self, event):
         print 'simu:enqueue'
