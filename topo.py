@@ -1,6 +1,8 @@
 from node import *
 from chunk import *
 import sys
+import Queue
+#from bintrees import RBTree
 
 class BaseBufManBuilder(object):
     band = 131072 # unit: byte per ms, == 1Gbps
@@ -115,6 +117,7 @@ class TopoGenerator(object):
                         #self.node_dic[nbr_id] = nbr
                     nbr = self.node_dic[nbr_id] 
                     node.addNbr(nbr)
+                    print "added node %d's nbr: %d" % (node.id, nbr.id)
                     buf_man_builder.buildBufMan(simu, node, nbr.id)
 
             except ValueError as e:
@@ -123,11 +126,62 @@ class TopoGenerator(object):
                 print words
                 sys.exit(-1)
         f.close()
+
     def getNodeDic(self):
         return self.node_dic
 
-    def genRouteTable(self, simu):
-        pass
+    def genForwardTable(self, simu):
+        ''' forward table is the next_hop dictionary in each node object '''
+        for node in self.node_dic.values():
+            self.dijkstra(node)
+        #self.dijkstra(self.node_dic[3])
+
+    def dijkstra(self, node):
+        ''' 
+            '''
+        # init
+        q = Queue.PriorityQueue()
+        q.put((0, node,))
+
+        dist, pred = {}, {} # distance and predecessor
+        visited = set()
+        for nd in self.node_dic.values():
+            dist[nd.id] = sys.maxint
+        dist[node.id] = 0
+        next_hop = {}
+
+        # the second condition, along with visited node checking, guarantees we only visit each node once. Thus without
+        # using decrease-key, we still achieve running time of O((V+E)*lgV)
+        while not q.empty() and len(visited) < len(self.node_dic):
+            nd = q.get()[1]
+            if nd.id in visited: continue
+            
+            print 'dijk: visiting node: %d' % (nd.id)
+            visited.add(nd.id)
+
+            # next hop bookkeeping 
+            if nd.id != node.id:
+                if pred[nd.id] == node.id: # immediate 
+                    next_hop[nd.id] = nd.id
+                elif pred[nd.id] in next_hop:
+                    next_hop[nd.id] = next_hop[pred[nd.id]]
+                else:
+                    raise ValueError('dijkstra: next hop not found')
+                    sys.exit(-1)
+
+            # Dijkstra relaxation 
+            for i in xrange(len(nd.nbrs)):
+                nbr, weight = nd.nbrs[i], nd.weights[i]
+                if dist[nbr.id] > dist[nd.id] + weight:
+                    print 'dijk: visiting nbr: %d' % (nbr.id)
+                    dist[nbr.id] = dist[nd.id] + weight
+                    pred[nbr.id] = nd.id
+                    q.put((dist[nbr.id], nbr))
+
+        node.next_hop = next_hop
+        print next_hop
+
+            
 
 class LinkProfileInitializer(object):
     DEFAULT_BANDWIDTH = 131072000 # 125*1024*1024, 1Gbps == 125MBps

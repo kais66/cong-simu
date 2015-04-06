@@ -6,12 +6,6 @@ from topo import *
 
 
 class Simulator(object):
-    #def __new__(cls, *args, **kwargs):
-    #    if not cls._singleton:
-    #        cls._singleton = super(Simulator, cls).__new__(cls, *args, **kwargs)
-            #cls._singleton.queue = None
-    #    return cls._singleton
-
     def __init__(self):
         self._queue = Queue.PriorityQueue()
         self._node_dic = {}
@@ -26,6 +20,7 @@ class Simulator(object):
 
         tp = TopoGenerator('/Users/SunnySky/workspace/cong-simu/input_files/topo_9nodes.txt')
         tp.parseTopoFile(self, BufManBuilderPerFlow())
+        tp.genForwardTable(self)
 
         self._node_dic = tp.getNodeDic()
         tf = TrafficGenerator('input_files/traff.txt')

@@ -17,6 +17,8 @@ class Node(object):
         self.weights = [] # corresponding to each link where self is one of the vertices
         self.buf_man = {} # next hop node id : buf_man. next_hop_id is in the meantime buf_man.id
 
+        self.next_hop = {} # dst_id : next_hop_id
+
         self.ifs = []
         
 
@@ -41,10 +43,11 @@ class Node(object):
         ''' a chunk will be enqueued at one of the buffers, by the link layer buffer manager. The chunk may come 
             from a higher layer buffer (app buffer), or from another node. '''
         print 'receive called'
-        pass
-        # determine the outgoing interface for this chunk, then call corresponding buf_man's enqueue
+        # find out the next hop for this chunk (i.e. corresponding buf_man)
+        next_hop = self.next_hop[chunk.dst()]
 
-        #self.buf_man.enqueue(chunk)
+        # then call corresponding buf_man's enqueue
+        self.buf_man[next_hop].enqueue(chunk)
         
     def addNbr(self, nbr):
         self.nbrs.append(nbr)
@@ -161,9 +164,13 @@ class BaseBufferManager(object):
                 chunk = buf.dequeue()
         return chunk
 
+    def next(self): 
+        pass
+
     def canDequeue(self, buf_id): 
         ''' given an index to a buffer, determine if we can dequeue a chunk (i.e. not blocked) from it. Returns a boolean '''
         return True
+
 
     def receive(self, chunk):
         ''' receive some data: increment buffer occupancy counter '''
@@ -191,7 +198,7 @@ class LinkBufferManager(BaseBufferManager):
         self._lat = lat # latency: between self.node and the next hop which this buffer is for
     
 
-class LinkBufferManagerPerFlow(BaseBufferManager):
+class LinkBufferManagerPerFlow(LinkBufferManager):
     def enqueue(self, chunk):
         print 'linkBufManPerFlow: enqueue'
         dst_id = chunk.dst() 
@@ -206,20 +213,28 @@ class LinkBufferManagerPerFlow(BaseBufferManager):
 
         self.buffers[dst_id].enqueue(chunk)
 
-class LinkBufferManagerPerIf(BaseBufferManager):
-    pass
 
-class LinkBufferManagerPerIf(BaseBufferManager):
+class LinkBufferManagerPerIf(LinkBufferManager):
     ''' per interface queuing '''
     def enqueue(self, chunk):
         ''' enqueue based on next hop, instead of dst '''
         pass
-    
 
 
-
-class ICongController:
+class BaseCongController(object):
     ''' The whole graph will only need one instance of CongController ''' 
-    def signal(self): 
+    def __init__(self):
+        self.obs = []
+        pass
+
+    def attachObserver(self, obs):
+        pass 
+    def detachObserver(self, obs):
+        pass
+    def notifyAll(self):
+        pass
+    def notifyOne(self, obs): 
         ''' signal a specific node about the congestion, it could ask a particular node to resend after some time. '''
         pass
+
+class CongControllerPerFlow(BaseCongController):

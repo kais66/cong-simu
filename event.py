@@ -32,4 +32,7 @@ class DownStackEvt(Event):
 
 class TxEvt(Event):
     def __init__(self, timestamp, node, dst_id):
-        pass  
+        super(TxEvt, self).__init__(timestamp)
+
+    def execute(self):
+        pass
