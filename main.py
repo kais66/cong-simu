@@ -10,6 +10,7 @@ class Simulator(object):
         self._queue = Queue.PriorityQueue()
         self._node_dic = {}
         self._sim_time = 0.0
+        self._length = 150
 
         #self.__dict___ = Simulator.shared_state
         #self.queue = Queue.PriorityQueue()
@@ -29,8 +30,9 @@ class Simulator(object):
         link_prof = LinkProfileInitializer()
 
     def enqueue(self, event):
-        print 'simu:enqueue'
-        self._queue.put((event.timestamp, event,))
+        #print 'simu:enqueue, evt with timestamp: %f' % (event.timestamp(),)
+        #print 'evt q len: %d' % (self._queue.qsize())
+        self._queue.put((event.timestamp(), event,))
 
     def run(self):
         print 'simu:run'
@@ -38,19 +40,25 @@ class Simulator(object):
 
         # run
         print 'evt q len: %d' % (self._queue.qsize())
-        while not self._queue.empty():
-            
+        while self._sim_time < self._length and not self._queue.empty():
             ev = self._queue.get()[1] # get() returns a tuple
+            self._sim_time = ev.timestamp()
             ev.execute()
-            self._sim_time = ev.timestamp
 
-    def time():
-        return self.time
+
+    def time(self):
+        return self._sim_time
 
     def advanceTimeTo(self, newtime):
-        if newtime <= self._sim_time:
+        if newtime < self._sim_time:
             print 'error'
         self._sim_time = newtime
+
+    def getNodeById(self, nid):
+        if nid not in self._node_dic:
+            raise KeyError('nid: %d not in dic' % (nid,))
+        else:
+            return self._node_dic[nid]
 
 if __name__ == '__main__':
     sim = Simulator()

@@ -5,8 +5,8 @@ import Queue
 #from bintrees import RBTree
 
 class BaseBufManBuilder(object):
-    band = 131072 # unit: byte per ms, == 1Gbps
-    lat = 10 # ms
+    band = 131072.0 # unit: byte per ms, == 1Gbps
+    lat = 10.0 # ms
     def __init__(self):
         pass
 
@@ -19,6 +19,8 @@ class BufManBuilderPerFlow(BaseBufManBuilder):
         buf_man.attachNode(node)
         node.attachBufMan(buf_man)
         node.addWeight(BaseBufManBuilder.lat) # by default, use latency as link weight
+        evt = TxEvt(0.0, buf_man, simu)
+        simu.enqueue(evt)
 
 class BufManBuilderPerIf(BaseBufManBuilder):
     def buildBufMan(self, simu, node, if_id):
@@ -56,7 +58,7 @@ class TrafficGenerator(object):
                     print 'error'
                     sys.exit()
 
-                chk = Chunk(int(words[0]), int(words[1]), int(words[2]))
+                chk = Chunk(int(words[0]), int(words[1]), int(words[2]), float(words[3]))
                 node = node_dic[src_id]
                 if not node.src:
                     src = TrafficSrc(node, None)
@@ -65,6 +67,11 @@ class TrafficGenerator(object):
                     src.attachBufMan(buf_man)
                     node.attachSrc(src)
                 node.src.pushAppBuffer(chk)
+
+                dst_node = node_dic[dst_id]
+                if not dst_node.sink:
+                    sink = TrafficSink(dst_node)
+                    dst_node.attachSink(sink)
 
             except ValueError as e:
                 print "Value error({0}): {1}".format(e.errno, e.strerror)
@@ -117,8 +124,8 @@ class TopoGenerator(object):
                         #self.node_dic[nbr_id] = nbr
                     nbr = self.node_dic[nbr_id] 
                     node.addNbr(nbr)
-                    print "added node %d's nbr: %d" % (node.id, nbr.id)
-                    buf_man_builder.buildBufMan(simu, node, nbr.id)
+                    print "added node %d's nbr: %d" % (node._id, nbr._id)
+                    buf_man_builder.buildBufMan(simu, node, nbr._id)
 
             except ValueError as e:
                 print "Value error({}): {1}"
@@ -146,25 +153,25 @@ class TopoGenerator(object):
         dist, pred = {}, {} # distance and predecessor
         visited = set()
         for nd in self.node_dic.values():
-            dist[nd.id] = sys.maxint
-        dist[node.id] = 0
+            dist[nd.id()] = sys.maxint
+        dist[node.id()] = 0
         next_hop = {}
 
         # the second condition, along with visited node checking, guarantees we only visit each node once. Thus without
         # using decrease-key, we still achieve running time of O((V+E)*lgV)
         while not q.empty() and len(visited) < len(self.node_dic):
             nd = q.get()[1]
-            if nd.id in visited: continue
+            if nd.id() in visited: continue
             
-            print 'dijk: visiting node: %d' % (nd.id)
-            visited.add(nd.id)
+            print 'dijk: visiting node: %d' % (nd.id())
+            visited.add(nd.id())
 
             # next hop bookkeeping 
-            if nd.id != node.id:
-                if pred[nd.id] == node.id: # immediate 
-                    next_hop[nd.id] = nd.id
-                elif pred[nd.id] in next_hop:
-                    next_hop[nd.id] = next_hop[pred[nd.id]]
+            if nd._id != node.id():
+                if pred[nd.id()] == node.id(): # immediate 
+                    next_hop[nd.id()] = nd.id()
+                elif pred[nd.id()] in next_hop:
+                    next_hop[nd.id()] = next_hop[pred[nd.id()]]
                 else:
                     raise ValueError('dijkstra: next hop not found')
                     sys.exit(-1)
@@ -172,11 +179,11 @@ class TopoGenerator(object):
             # Dijkstra relaxation 
             for i in xrange(len(nd.nbrs)):
                 nbr, weight = nd.nbrs[i], nd.weights[i]
-                if dist[nbr.id] > dist[nd.id] + weight:
-                    print 'dijk: visiting nbr: %d' % (nbr.id)
-                    dist[nbr.id] = dist[nd.id] + weight
-                    pred[nbr.id] = nd.id
-                    q.put((dist[nbr.id], nbr))
+                if dist[nbr.id()] > dist[nd.id()] + weight:
+                    print 'dijk: visiting nbr: %d' % (nbr.id())
+                    dist[nbr.id()] = dist[nd.id()] + weight
+                    pred[nbr.id()] = nd.id()
+                    q.put((dist[nbr.id()], nbr))
 
         node.next_hop = next_hop
         print next_hop
