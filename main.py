@@ -60,6 +60,12 @@ class Simulator(object):
         else:
             return self._node_dic[nid]
 
+    def nodes(self):
+        return self._node_dic.values()
+
+    def nodesDic(self):
+        return self._node_dic
+
 if __name__ == '__main__':
     sim = Simulator()
     sim.loadInput()

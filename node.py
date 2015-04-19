@@ -23,6 +23,9 @@ class Node(object):
     def id(self):
         return self._id
 
+    def nextHopDic(self):
+        return self.next_hop
+
     def attachBufMan(self, buf_man):
         self.buf_man[buf_man.id()] = buf_man
         #self.buf_man.attachNode(self)
@@ -109,13 +112,14 @@ class BaseBuffer: # buffer could be for a single interface, or for a single flow
         self.buf_id = buf_id
         self.max_bytes = capa # max capacity in bytes
         self.cur_bytes = 0
-        #self.queue = Queue.Queue() # queue of chunks
         self.queue = collections.deque()
         self.cur_node = node
         # buffer scheduling cycle, blocking time
         
         self.next_sched = 0.0 # in millisecond
         self.sched_intv = 0.1 # 1MB chunk per 0.1ms, i.e. default is 10GB/s 
+
+        self.cong_ctrl = cong_ctrl
 
     def startBlocking(self): # this should be an observe() function in a observer: once a corresponding congestion
                             # signal is active, the current buffer is blocked.
@@ -125,6 +129,7 @@ class BaseBuffer: # buffer could be for a single interface, or for a single flow
         #self.queue.put(chunk)
         self.queue.append(chunk)
         self.increCurBytes(chunk.size())
+        self.cong_ctrl.updateState()
         #self.curNode(cur_node)
         print 'BaseBuffer:enqueue the chunk'
 
@@ -140,8 +145,11 @@ class BaseBuffer: # buffer could be for a single interface, or for a single flow
     def peek(self):
         return self.queue[0]
 
-    def getCurBytes(self):
+    def numBytes(self):
         return self.cur_bytes
+
+    def numChunks(self):
+        return len(self.queue)
 
     def increCurBytes(self, inc):
         self.cur_bytes += inc
@@ -152,13 +160,28 @@ class BaseBuffer: # buffer could be for a single interface, or for a single flow
     def insertEvent(self):
         pass
 
+    # cong control related operations
+    def congCtrl(self):
+        return self.cong_ctrl
+
+    def attachCongObserver(self, obs_buf):
+        self.cong_ctrl.attach(obs_buf)
+
 class AppBuffer(BaseBuffer):
     def insertEvent(self):
-        evt = DownStackEvt(self._node, self.buf_id)
-        Simulator().enqueue(evt)
+        #evt = DownStackEvt(self._node, self.buf_id)
+        #Simulator().enqueue(evt)
+        pass
 
 class LinkBuffer(BaseBuffer):
     def insertEvent(self):
+        pass
+
+class LinkBufferPerFlow(LinkBuffer):
+    def enqueue(self, chunk):
+        pass
+
+    def attachObserver(self):
         pass
 
 class BaseBufferManager(object):
@@ -174,6 +197,9 @@ class BaseBufferManager(object):
 
     def addBuffer(self, buf_id):
         self._buffers[buf_id] = BaseBuffer(self._node, buf_id)
+
+    def getBufById(self, buf_id):
+        return self._buffers[buf_id]
 
     def attachNode(self, node):
         self._node = node
@@ -215,7 +241,7 @@ class AppBufferManager(BaseBufferManager):
             self.addBuffer(dst_id)
 
             # for every destination, downStackEvt is created once initially
-            evt = DownStackEvt(0.0, self._node, dst_id)
+            evt = DownStackEvt(self._simulator, 0.0, self._node, dst_id)
             self._simulator.enqueue(evt)
 
         self._buffers[dst_id].enqueue(chunk)
@@ -247,6 +273,10 @@ class LinkBufferManagerPerFlow(LinkBufferManager):
         self._buf_ids = []
         self._last_buf_ind = 0
 
+    def addBuffer(self, buf_id):
+        cong_ctrl = CongControllerPerFlow()
+        self._buffers[buf_id] = LinkBufferPerFlow(self._node, buf_id, cong_ctrl)
+
     def enqueue(self, chunk):
         print 'linkBufManPerFlow: enqueue'
         dst_id = chunk.dst() 
@@ -254,12 +284,9 @@ class LinkBufferManagerPerFlow(LinkBufferManager):
             self.addBuffer(dst_id)
         
         buf = self._buffers[dst_id]
-
-        #if buf.empty():
-        #    evt = TxEvt(chunk.timestamp(), self._node, dst_id)
-        #    self._simulator.enqueue(evt)
-
         self._buffers[dst_id].enqueue(chunk)
+
+        # if last hop is not in cong_ctrl's observers, attach it
         print 'linkBufManPerFlow: enqueue a chunk at node %d buf_man %d buf %d' \
                 % (self._node._id, self._id, dst_id)
 
@@ -277,7 +304,8 @@ class LinkBufferManagerPerFlow(LinkBufferManager):
                 chunk = buf.peek()
                 print 'LinkBufferManagerPerFlow:schedBuf: chunk start time: %f, sim time: %f' \
                     % (chunk.startTimestamp(), self._simulator.time())
-                if chunk.startTimestamp() <= self._simulator.time():
+                if chunk.startTimestamp() <= self._simulator.time() and \
+                    not buf.congCtrl().isBlockedOut(self._simulator.time()):
                     self._last_buf_ind = temp_ind % len(self._buf_ids)
                     return cur_id
             if cur_id == self._buf_ids[self._last_buf_ind]:  # we've checked all buffers
@@ -290,21 +318,3 @@ class LinkBufferManagerPerIf(LinkBufferManager):
         ''' enqueue based on next hop, instead of dst '''
         pass
 
-
-class BaseCongController(object):
-    def __init__(self):
-        self.obs = []
-        pass
-
-    def attachObserver(self, obs):
-        pass 
-    def detachObserver(self, obs):
-        pass
-    def notifyAll(self):
-        pass
-    def notifyOne(self, obs): 
-        ''' signal a specific node about the congestion, it could ask a particular node to resend after some time. '''
-        pass
-
-class CongControllerPerFlow(BaseCongController):
-    pass

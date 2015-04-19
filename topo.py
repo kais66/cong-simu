@@ -2,7 +2,6 @@ from node import *
 from chunk import *
 import sys
 import Queue
-#from bintrees import RBTree
 
 class BaseBufManBuilder(object):
     band = 131072.0 # unit: byte per ms, == 1Gbps
@@ -13,14 +12,38 @@ class BaseBufManBuilder(object):
     def buildBufMan(self, simu, node, if_id): # interface id, because each interface has a buf man
         pass
 
+    def genObservers(self, simu, topo):
+        pass
+
 class BufManBuilderPerFlow(BaseBufManBuilder):
     def buildBufMan(self, simu, node, if_id):
         buf_man = LinkBufferManagerPerFlow(simu, if_id, BaseBufManBuilder.band, BaseBufManBuilder.lat)
         buf_man.attachNode(node)
         node.attachBufMan(buf_man)
         node.addWeight(BaseBufManBuilder.lat) # by default, use latency as link weight
-        evt = TxEvt(0.0, buf_man, simu)
+        evt = TxEvt(simu, 0.0, buf_man, simu)
         simu.enqueue(evt)
+
+    def genObservers(self, simu, topo):
+        ''' output: dic = {node_id : {flow_id(dst_id) : upstream_id}} '''
+        nd_obs_dic = {} # {node_id : {flow_id(dst_id) : [upstream_ids]}}
+        for nd in simu.nodes():
+            for dst_id in nd.nextHopDic():
+                next_hop = nd.nextHopDic[dst_id]
+
+                #if next_hop not in nd_obs_dic:
+                #    nd_obs_dic[next_hop] = {}
+                #cur_obs_dic = nd_obs_dic[next_hop]
+                #if dst_id not in cur_obs_dic:
+                #    cur_obs_dic[dst_id] = []
+
+                self.attachObserver(simu.getNodesDic()[next_hop], dst_id, nd)
+
+    def attachObserver(self, cur_nd, dst_id, pred_nd):
+        cur_buf = cur_nd.getBufManByDst(dst_id).getBufById(dst_id)
+        pred_buf = pred_nd.getBufManByDst(dst_id).getBufById(dst_id)
+        cur_buf.attachCongObserver(pred_buf)
+
 
 class BufManBuilderPerIf(BaseBufManBuilder):
     def buildBufMan(self, simu, node, if_id):
@@ -82,6 +105,7 @@ class TopoGenerator(object):
     def __init__(self, topo_file): 
         self.topo_file = topo_file
         self.node_dic = {}
+        self.src_pred_dic = {} # { dst : {node_id : pred_id}}
          
     def parseTopoFile(self, simu, buf_man_builder):
         try:
@@ -167,7 +191,7 @@ class TopoGenerator(object):
             visited.add(nd.id())
 
             # next hop bookkeeping 
-            if nd._id != node.id():
+            if nd.id() != node.id():
                 if pred[nd.id()] == node.id(): # immediate 
                     next_hop[nd.id()] = nd.id()
                 elif pred[nd.id()] in next_hop:
@@ -187,6 +211,10 @@ class TopoGenerator(object):
 
         node.next_hop = next_hop
         print next_hop
+
+        self.src_pred_dic[node.id()] = pred
+
+    
 
             
 
