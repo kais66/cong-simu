@@ -20,8 +20,12 @@ class Simulator(object):
         #Simulator.queue = Queue.PriorityQueue()
 
         tp = TopoGenerator('/Users/SunnySky/workspace/cong-simu/input_files/topo_9nodes.txt')
-        tp.parseTopoFile(self, BufManBuilderPerFlow())
+
+        builder = BufManBuilderPerFlow()
+
+        tp.parseTopoFile(self, builder)
         tp.genForwardTable(self)
+        builder.genObservers(self, tp)
 
         self._node_dic = tp.getNodeDic()
         tf = TrafficGenerator('input_files/traff.txt')

@@ -4,7 +4,8 @@ class Event(object):
         self._simu = simu
     
     def execute(self):
-        
+        pass
+
     def printEvt(self):
         pass
 
@@ -40,7 +41,7 @@ class TxEvt(Event):
         
 
     def execute(self):
-        print 'TxEvt: executing, time: %f, node id: %d, buf_man id: %d' % (self._timestamp, self.buf_man._node._id, self.buf_man._id)
+        print 'TxEvt: executing, time: %f, node id: %d, buf_man id: %d' % (self._timestamp, self._buf_man._node._id, self._buf_man._id)
         buf_id = self._buf_man.schedBuffer()
         if buf_id == -1: # nothing to send
             evt = TxEvt(self._simu, self._timestamp + self._buf_man.schedInterval(), self._buf_man)
