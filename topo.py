@@ -49,14 +49,23 @@ class BufManBuilderPerIf(BaseBufManBuilder):
     def buildBufMan(self, simu, node, if_id):
         buf_man = LinkBufferManagerPerIf(simu, if_id, BaseBufManBuilder.band, BaseBufManBuilder.lat)
         buf_man.attachNode(node)
+
+        self.buf_man = buf_man
         node.attachBufMan(buf_man)
         node.addWeight(BaseBufManBuilder.lat) # by default, use latency as link weight
         evt = TxEvt(simu, 0.0, buf_man)
         simu.enqueue(evt)
 
     def genObservers(self, simu, topo):
-        pass
+        for nd in simu.nodes():
+            for nbr in nd.nbrs:
+                self.attachObserver(self.buf_man, nbr)
 
+    def attachObserver(self, cur_buf_man, pred_nd):
+        cur_buf = cur_buf_man.getBufById(cur_buf_man.id())
+        pred_buf_man = pred_nd.getBufManByNextHop(cur_buf_man.node().id())
+        cur_buf.attachCongObserver(pred_buf_man.getBufById(pred_buf_man.id()))
+        
 
 class TrafficGenerator(object):
     ''' 

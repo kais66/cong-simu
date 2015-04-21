@@ -52,6 +52,7 @@ class TxEvt(Event):
         # now, 'Transmit' for this buffer
         chunk = self._buf_man.dequeue(buf_id)
         assert chunk is not None
+        chunk.updateTimestamp(self._timestamp)
         
         recv_time = self._timestamp + self._buf_man.schedInterval(chunk)
         next_hop_id = self._buf_man.node().getNextHop(chunk.dst())
@@ -65,16 +66,18 @@ class TxEvt(Event):
 
         # schedule next Tx
         evt = TxEvt(self._simu, self._timestamp + self._buf_man.schedInterval(chunk), self._buf_man)
-        self.simulator.enqueue(evt)
+        self._simu.enqueue(evt)
 
 class RxEvt(Event):
     ''' Receive-Event. '''
     def __init__(self, simu, timestamp, chunk, node):
         super(RxEvt, self).__init__(simu, timestamp)
         self._chunk = chunk
-        self._buf_man = buf_man
+        self._node = node
+        #self._buf_man = buf_man
 
     def execute(self):
-        print 'RxEvt: executing, time: %f, node id: %d, buf_man id: %d' % (self._timestamp, self.buf_man._node._id, self.buf_man._id)
-        node.receive(chunk)
+        print 'RxEvt: executing, time: %f, node id: %d' % (self._timestamp, self._node.id())
+        self._node.receive(self._chunk)
+        self._chunk.updateTimestamp(self._timestamp)
 

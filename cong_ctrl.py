@@ -10,6 +10,8 @@ class BaseCongController(object):
         # whether traffic into this buffer is currently blocked
         self._block_in = False
 
+    def attachBuf(self, buf):
+        self._buf = buf
 
     def attachObserver(self, obs):
         self._obs.append(obs)
@@ -26,6 +28,7 @@ class BaseCongController(object):
 
     def isBlockedOut(self, sub, cur_time):
         pass
+
 # as of now, Apr 13th, it's implemented as per-dst queuing, but this can be extended.
 class CongControllerPerFlow(BaseCongController):
     ''' Each observer is an upstream buffer. CongCtrl algo is to limit num outstanding chunks to be H, 
@@ -80,6 +83,7 @@ class CongControllerPerIf(BaseCongController):
         Note: another way of per-interface queuing is: a shared buffer space for all outgoing interfaces. This implementation is 
         for the first way. ''' 
     def __init__(self):
+        super(CongControllerPerIf, self).__init__()
         self._block_out_till = {} # cong_ctrl_subject : future_time
 
     def updateBlockInState(self, future_time=None):

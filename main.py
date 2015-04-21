@@ -21,7 +21,8 @@ class Simulator(object):
 
         tp = TopoGenerator('/Users/SunnySky/workspace/cong-simu/input_files/topo_9nodes.txt')
 
-        builder = BufManBuilderPerFlow()
+        #builder = BufManBuilderPerFlow()
+        builder = BufManBuilderPerIf()
 
         tp.parseTopoFile(self, builder)
         tp.genForwardTable(self)

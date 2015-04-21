@@ -2,6 +2,7 @@
 import collections
 from event import *
 from main import Simulator
+from cong_ctrl import *
 
 class Node(object):
     ''' Provides the 'node' abstraction. Because we need to simulate two types of 
@@ -31,9 +32,15 @@ class Node(object):
         #self.buf_man.attachNode(self)
 
     def getBufManByDst(self, dst_id):
+        print 'Node:getBufManByDst: node_id: %d, dst_id: %d' % (self._id, dst_id)
         if dst_id not in self.next_hop or self.next_hop[dst_id] not in self.buf_man:
             raise ValueError('Node:getBufMan: buf man not found')
         return self.buf_man[self.next_hop[dst_id]]
+
+    def getBufManByNextHop(self, next_hop_id):
+        if next_hop_id not in self.buf_man:
+            raise KeyError('Node:getBufMan: next hop not found')
+        return self.buf_man[next_hop_id]
 
     def getNextHop(self, dst_id):
         assert dst_id in self.next_hop
@@ -55,7 +62,8 @@ class Node(object):
     def receive(self, chunk):
         ''' a chunk will be enqueued at one of the buffers, by the link layer buffer manager. The chunk may come 
             from a higher layer buffer (app buffer), or from another node. '''
-        print 'receive called'
+        print '=== Node:receive: node: %d, chunk: ' % (self._id)
+        chunk.show()
 
         # if cur node is dst, send it to sink, else enqueue at link buffer manager
         if chunk.dst() == self._id:
@@ -103,19 +111,20 @@ class TrafficSink:
         self._node = node
 
     def finish(self, chunk):
-        print 'TrafficSink:finish, node %d' % (self._node.id())
+        print '*** TrafficSink:finish, node %d' % (self._node.id())
         chunk.show()
     
 
-class BaseBuffer: # buffer could be for a single interface, or for a single flow
+class BaseBuffer(object): # buffer could be for a single interface, or for a single flow
     def __init__(self, node, buf_id):
         self.buf_id = buf_id
-        #self.max_bytes = capa # max capacity in bytes
+        self.max_bytes = 10485760 # max capacity in bytes, 10MB to begin with
         self.cur_bytes = 0
         self.queue = collections.deque()
         self.cur_node = node
+
+
         # buffer scheduling cycle, blocking time
-        
         self.next_sched = 0.0 # in millisecond
         self.sched_intv = 0.1 # 1MB chunk per 0.1ms, i.e. default is 10GB/s 
 
@@ -129,12 +138,7 @@ class BaseBuffer: # buffer could be for a single interface, or for a single flow
         #self.curNode(cur_node)
         print 'BaseBuffer:enqueue the chunk'
 
-    def dequeue(self, dq_time):
-        ''' dequeue time should be the receiving time, i.e. Tx timestamp plus time it takes to Tx the whole chunk '''
-        # need to check, if removing this chunk may cause any change in block_in states
-        chunk = self.queue.popleft()
-        self.cong_ctrl.updateBlockInState(dq_time)
-        return chunk
+    def dequeue(self, dq_time): pass
 
     def empty(self):
         return False if self.queue else True
@@ -144,6 +148,9 @@ class BaseBuffer: # buffer could be for a single interface, or for a single flow
 
     def numBytes(self):
         return self.cur_bytes
+
+    def capacity(self):
+        return self.max_bytes
 
     def numChunks(self):
         return len(self.queue)
@@ -167,7 +174,10 @@ class AppBuffer(BaseBuffer):
         self.increCurBytes(chunk.size())
         #self.curNode(cur_node)
         print 'AppBuffer:enqueue the chunk'
-
+    
+    def dequeue(self, dq_time):
+        return self.queue.popleft()
+        
 class LinkBuffer(BaseBuffer):
     def __init__(self, node, buf_id, cong_ctrl):
         super(LinkBuffer, self).__init__(node, buf_id)
@@ -178,14 +188,21 @@ class LinkBuffer(BaseBuffer):
 
     def enqueue(self, chunk):
         super(LinkBuffer, self).enqueue(chunk)
-        self.cong_ctrl.updateBlockInState()
+        self._cong_ctrl.updateBlockInState()
+
+    def dequeue(self, dq_time):
+        ''' dequeue time should be the receiving time, i.e. Tx timestamp plus time it takes to Tx the whole chunk '''
+        # need to check, if removing this chunk may cause any change in block_in states
+        chunk = self.queue.popleft()
+        self._cong_ctrl.updateBlockInState(dq_time)
+        return chunk
 
     # cong control related operations
     def congCtrl(self):
-        return self.cong_ctrl
+        return self._cong_ctrl
 
     def attachCongObserver(self, obs_buf):
-        self.cong_ctrl.attach(obs_buf)
+        self._cong_ctrl.attach(obs_buf)
 
 class LinkBufferPerFlow(LinkBuffer):
     def enqueue(self, chunk):
@@ -193,6 +210,9 @@ class LinkBufferPerFlow(LinkBuffer):
 
     def attachObserver(self):
         pass
+
+class LinkBufferPerIf(LinkBuffer):
+    pass
 
 class BaseBufferManager(object):
     def __init__(self, simu, id):
@@ -235,16 +255,27 @@ class BaseBufferManager(object):
         pass
 
 class AppBufferManager(BaseBufferManager):
+    def addBuffer(self, buf_id):
+        self._buffers[buf_id] = AppBuffer(self._node, buf_id)
+
     def enqueue(self, chunk):
         dst_id = chunk.dst() 
         if dst_id not in self._buffers:
             self.addBuffer(dst_id)
 
-            # for every destination, downStackEvt is created once initially
-            evt = DownStackEvt(self._simulator, 0.0, self._node, dst_id)
-            self._simulator.enqueue(evt)
+        evt = DownStackEvt(self._simulator, 0.0, self._node, dst_id)
+        self._simulator.enqueue(evt)
 
         self._buffers[dst_id].enqueue(chunk)
+
+    def dequeue(self, buf_id):
+        if buf_id not in self._buffers:
+            raise KeyError('AppBufMan: buf_id: %d not found' % (buf_id,))
+        buf = self._buffers[buf_id]
+        chunk = None
+        if not buf.empty():
+            chunk = buf.dequeue(-1.0)
+        return chunk
 
 class LinkBufferManager(BaseBufferManager):
     def __init__(self, simu, id, band, lat):
@@ -267,16 +298,25 @@ class LinkBufferManager(BaseBufferManager):
         pass
 
     def canDequeue(self, buf_id):
-        buf = self._buffers[cur_id]
-        if not buf.empty(): 
-            # if current time is after the scheduled Tx time
+        buf = self._buffers[buf_id]
+        if not buf.empty():
             chunk = buf.peek()
-            print 'LinkBufferManagerPerFlow:schedBuf: chunk start time: %f, sim time: %f' \
-                % (chunk.timestamp(), self._simulator.time())
-            if chunk.timestamp() <= self._simulator.time() and \
-                not buf.congCtrl().isBlockedOut(self._simulator.time()):
-                return True
+            if chunk.timestamp() <= self._simulator.time():
+                # see if the chunk will go to a block_in buffer
+                next_hop_id = self._node.getNextHop(chunk.dst())
+
+                # for now, assume application is fast, and have infinite buffer
+                if next_hop_id == chunk.dst():
+                    return True
+
+                next_hop = self._simulator.getNodeById(next_hop_id)
+                next_hop_bufman = next_hop.getBufManByDst(chunk.dst())
+                next_hop_buf = next_hop_bufman.getBufById(next_hop_bufman.id())
+
+                if not buf.congCtrl().isBlockedOut(next_hop_buf, self._simulator.time()):
+                    return True
         return False
+
 
     def dequeue(self, buf_id):
         if buf_id not in self._buffers:
@@ -305,6 +345,7 @@ class LinkBufferManagerPerFlow(LinkBufferManager):
     def addBuffer(self, buf_id):
         cong_ctrl = CongControllerPerFlow()
         self._buffers[buf_id] = LinkBufferPerFlow(self._node, buf_id, cong_ctrl)
+        cong_ctrl.attachBuf(self._buffers[buf_id])
 
     def enqueue(self, chunk):
         print 'linkBufManPerFlow: enqueue'
@@ -354,26 +395,12 @@ class LinkBufferManagerPerIf(LinkBufferManager):
     def addBuffer(self, buf_id):
         cong_ctrl = CongControllerPerIf()
         self._buffers[buf_id] = LinkBufferPerIf(self._node, buf_id, cong_ctrl)
+        cong_ctrl.attachBuf(self._buffers[buf_id])
 
     def enqueue(self, chunk):
         ''' enqueue based on next hop, instead of dst '''
         print 'LinkBufferManagerPerIf: enqueue'
         self._buffer.enqueue(chunk)
-
-    def canDequeue(self, buf_id):
-        buf = self._buffers[cur_id]
-        if not buf.empty():
-            chunk = buf.peek()
-            if chunk.timestamp() <= self._simulator.time():
-                # see if the chunk will go to a block_in buffer
-                next_hop_id = self._node.getNextHop(chunk.dst())
-                next_hop = self._simulator.getNodeById(next_hop_id)
-                next_hop_bufman = next_hop.getBufManByDst(chunk.dst())
-                next_hop_buf = next_hop_bufman.getBufById(next_hop_bufman.id())
-
-                if not buf.congCtrl().isBlockedOut(next_hop_buf, self._simulator.time()):
-                    return True
-        return False
 
     def schedBuffer(self):
         return self._id if self.canDequeue(self._id) else -1

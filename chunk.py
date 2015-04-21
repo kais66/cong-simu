@@ -19,7 +19,7 @@ class Chunk:
     def curNode(self, node_id):
         self.cur_id = node_id
 
-    def timestamp(self, time):
+    def updateTimestamp(self, time):
         self._cur_ts = time
 
     def timestamp(self):
@@ -29,5 +29,5 @@ class Chunk:
         return self._start_ts
 
     def show(self):
-        print 'chunk: src: %d, dst: %d, cur: %d, size: %d, time: %f' % \
-                (self._src_id, self._dst_id, self._cur_id, self._size, self._cur_ts)
+        print 'chunk: src: %d, dst: %d, cur: %d, size: %d, start_time: %f, cur_time: %f' % \
+                (self._src_id, self._dst_id, self._cur_id, self._size, self._start_ts, self._cur_ts)
