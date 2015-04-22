@@ -4,8 +4,9 @@ import sys
 import Queue
 
 class BaseBufManBuilder(object):
-    band = 131072.0 # unit: byte per ms, == 1Gbps
-    lat = 10.0 # ms
+    #band = 131072.0 # unit: byte per ms, == 1Gbps
+    band = 6750.0 # byte per ms, == 54 Mbps
+    lat = 0.0 # ms
     def __init__(self):
         pass
 
@@ -21,7 +22,7 @@ class BufManBuilderPerFlow(BaseBufManBuilder):
         buf_man.attachNode(node)
         node.attachBufMan(buf_man)
         node.addWeight(BaseBufManBuilder.lat) # by default, use latency as link weight
-        evt = TxEvt(simu, 0.0, buf_man)
+        evt = TxStartEvt(simu, 0.0, buf_man)
         simu.enqueue(evt)
 
     def genObservers(self, simu, topo):
@@ -29,7 +30,7 @@ class BufManBuilderPerFlow(BaseBufManBuilder):
         nd_obs_dic = {} # {node_id : {flow_id(dst_id) : [upstream_ids]}}
         for nd in simu.nodes():
             for dst_id in nd.nextHopDic():
-                next_hop = nd.nextHopDic[dst_id]
+                next_hop = nd.nextHopDic()[dst_id]
 
                 #if next_hop not in nd_obs_dic:
                 #    nd_obs_dic[next_hop] = {}
@@ -37,12 +38,16 @@ class BufManBuilderPerFlow(BaseBufManBuilder):
                 #if dst_id not in cur_obs_dic:
                 #    cur_obs_dic[dst_id] = []
 
-                self.attachObserver(simu.getNodesDic()[next_hop], dst_id, nd)
+                self.attachObserver(simu.nodesDic()[next_hop], dst_id, nd)
 
     def attachObserver(self, cur_nd, dst_id, pred_nd):
+        if cur_nd.id() == dst_id:
+            return 
+        print 'Builder:attachObs: cur_nd: %d, dst: %d, pred: %d' \
+                % (cur_nd.id(), dst_id, pred_nd.id())
         cur_buf = cur_nd.getBufManByDst(dst_id).getBufById(dst_id)
         pred_buf = pred_nd.getBufManByDst(dst_id).getBufById(dst_id)
-        cur_buf.attachCongObserver(pred_buf)
+        cur_buf.attachCongObserver(pred_buf.congCtrl())
 
 
 class BufManBuilderPerIf(BaseBufManBuilder):
@@ -53,18 +58,21 @@ class BufManBuilderPerIf(BaseBufManBuilder):
         self.buf_man = buf_man
         node.attachBufMan(buf_man)
         node.addWeight(BaseBufManBuilder.lat) # by default, use latency as link weight
-        evt = TxEvt(simu, 0.0, buf_man)
+        evt = TxStartEvt(simu, 0.0, buf_man)
         simu.enqueue(evt)
 
     def genObservers(self, simu, topo):
         for nd in simu.nodes():
-            for nbr in nd.nbrs:
-                self.attachObserver(self.buf_man, nbr)
+            for man in nd.buf_man.values():
+                for nbr in nd.nbrs:
+                    self.attachObserver(man, nbr)
 
     def attachObserver(self, cur_buf_man, pred_nd):
+        print 'Builder:attachObs: cur_nd: %d, cur_buf_man: %d, pred: %d' \
+                % (cur_buf_man._node.id(), cur_buf_man.id(), pred_nd.id(),)
         cur_buf = cur_buf_man.getBufById(cur_buf_man.id())
         pred_buf_man = pred_nd.getBufManByNextHop(cur_buf_man.node().id())
-        cur_buf.attachCongObserver(pred_buf_man.getBufById(pred_buf_man.id()))
+        cur_buf.attachCongObserver(pred_buf_man.getBufById(pred_buf_man.id()).congCtrl())
         
 
 class TrafficGenerator(object):
@@ -84,7 +92,7 @@ class TrafficGenerator(object):
         for line in f:
             if not line or line[0] == '#': continue
             words = line.split(',')
-            if len(words) != 4: 
+            if len(words) != 5: 
                 print 'Error'
                 continue
 
@@ -95,7 +103,7 @@ class TrafficGenerator(object):
                     print 'error'
                     sys.exit()
 
-                chk = Chunk(int(words[0]), int(words[1]), int(words[2]), float(words[3]))
+                chk = Chunk(int(words[0]), int(words[1]), int(words[2]), float(words[3]), int(words[4]))
                 node = node_dic[src_id]
                 if not node.src:
                     src = TrafficSrc(node, None)

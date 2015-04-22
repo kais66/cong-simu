@@ -35,6 +35,7 @@ class CongControllerPerFlow(BaseCongController):
         this is done on a buffer to buffer basis (downstream buffer, i.e. subject, notify 
         upstream buffer, i.e. observer). '''
     def __init__(self):
+        super(CongControllerPerFlow, self).__init__()
         self._ostd_chk_limit = 1
 
         # till when is outgoing traffic blocked: -1 means not blocked, 0 means blocked indefinitely, otherwise
@@ -45,13 +46,15 @@ class CongControllerPerFlow(BaseCongController):
         ''' return if block In state is changed '''
         if not self._block_in and self._buf.numChunks() >= self._ostd_chk_limit:
             self._block_in = True
-            self.notifyCong(0)
+            print 'BlockInState: --> blocked'
+            self.notifyCong(self, 0)
             return True
 
         if self._block_in and self._buf.numChunks() < self._ostd_chk_limit:
             assert future_time is not None
             self._block_in = False
-            self.notifyCong(future_time)
+            print 'BlockInState: --> unblocked'
+            self.notifyCong(self, future_time)
             return True
         return False
 
@@ -66,12 +69,18 @@ class CongControllerPerFlow(BaseCongController):
 
     def isBlockedOut(self, sub, cur_time):
         ''' cur_time is a float ''' 
-        if self._blocked_out_till < 0:
-            return False
-        elif self._blocked_out_till == 0:
-            return True
+
+        ret = None
+        if self._block_out_till < 0:
+            ret = False
+        elif self._block_out_till == 0:
+            ret = True
         else:
-            return cur_time < self._blocked_out_till
+            ret = (cur_time < self._block_out_till)
+
+        if ret:
+            print '!!! CongController: blocked. '
+        return ret
 
 
 # A problem with per-if queuing is: if multiple upstream outgoing buffer
@@ -87,8 +96,9 @@ class CongControllerPerIf(BaseCongController):
         self._block_out_till = {} # cong_ctrl_subject : future_time
 
     def updateBlockInState(self, future_time=None):
-        if not self._block_in and self._buf.numBytes() > self._buf.capacity():
+        if not self._block_in and self._buf.numBytes() >= self._buf.capacity():
             self._block_in = True
+            print 'BlockInState: --> blocked'
             self.notifyCong(self, 0)
             return True
         return False
@@ -102,12 +112,18 @@ class CongControllerPerIf(BaseCongController):
             ob._block_out_till[sub] = future_time
 
     def isBlockedOut(self, sub, cur_time):
+        ret = None
         if sub not in self._block_out_till: # meaning sub is not a subject for this observer
-            return False
-        future_time = self._block_out_till[sub]
-        if future_time < 0: 
-            return False
-        elif future_time == 0:
-            return True
+            ret = False
         else:
-            return cur_time < future_time
+            future_time = self._block_out_till[sub]
+            if future_time < 0: 
+                ret = False
+            elif future_time == 0:
+                ret = True
+            else:
+                ret = (cur_time < future_time)
+
+        if ret:
+            print '!!! CongController: blocked. '
+        return ret
