@@ -14,7 +14,8 @@ class BaseCongController(object):
         self._buf = buf
 
     def attachObserver(self, obs):
-        self._obs.append(obs)
+        if obs is not self:
+            self._obs.append(obs)
 
     def detachObserver(self, obs):
         pass
@@ -98,7 +99,8 @@ class CongControllerPerIf(BaseCongController):
     def updateBlockInState(self, future_time=None):
         if not self._block_in and self._buf.numBytes() >= self._buf.capacity():
             self._block_in = True
-            print 'BlockInState: --> blocked'
+            print 'BlockInState: --> blocked, node: %d, buf: %d' % \
+                (self._buf.node().id(), self._buf.id())
             self.notifyCong(self, 0)
             return True
         return False
@@ -110,10 +112,18 @@ class CongControllerPerIf(BaseCongController):
     def notifyCong(self, sub, future_time):
         for ob in self._obs:
             ob._block_out_till[sub] = future_time
+            print 'notifyCong: block_out: node: %d, buf: %d, block_in: node: %d, buf: %d' % \
+                (ob._buf.node().id(), ob._buf.id(), sub._buf.node().id(), sub._buf.id())
+            print ob
+            print sub
+            
 
     def isBlockedOut(self, sub, cur_time):
         ret = None
+        print 'isBlockedOut'
+        print sub
         if sub not in self._block_out_till: # meaning sub is not a subject for this observer
+            print '!!! congestion subject not found '
             ret = False
         else:
             future_time = self._block_out_till[sub]

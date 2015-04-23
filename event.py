@@ -22,7 +22,7 @@ class DownStackEvt(Event):
         self._dst_id = dst_id
 
     def execute(self):
-        print 'DownStackEvt: executing, time: %f' % (self._timestamp)
+        print '\n=== begin DownStackEvt: executing, time: %f' % (self._timestamp)
 
         # see if the app buffer is currently blocked, 
         if not self._node.src:
@@ -36,7 +36,7 @@ class DownStackEvt(Event):
             print 'DownStackEvt: no chunk to be pushed down'
 
     #def printEvt(self):
-    #    print 'executing DownStackEvt'
+        print '=== end executing DownStackEvt\n'
 
 class TxEvt(Event):
     def __init__(self, simu, timestamp, buf_man):
@@ -89,6 +89,7 @@ class TxStartEvt(Event):
             self._simu.enqueue(evt)
             return
         
+        print '\n=== begin TxStartEvt'
         chunk = self._buf_man.getBufById(buf_id).peek()
         chunk.updateTimestamp(self._timestamp)
         chunk.setStatus(Chunk.DURING_TX)
@@ -107,6 +108,7 @@ class TxStartEvt(Event):
 
         te_evt = TxEndEvt(self._simu, self._timestamp + tx_time, self._buf_man, buf_id)
         self._simu.enqueue(te_evt)
+        print '=== end TxStartEvt\n'
 
 
 class TxEndEvt(Event): # block_in state change at sender
@@ -117,6 +119,7 @@ class TxEndEvt(Event): # block_in state change at sender
         self._buf_id = buf_id
 
     def execute(self):
+        print '\n=== begin TxEndEvt'
         chunk = self._buf_man.dequeue(self._buf_id)
         chunk.updateTimestamp(self._timestamp)
         print 'TxEndEvt: executing, time: %f, node id: %d, buf_man id: %d' % \
@@ -124,7 +127,7 @@ class TxEndEvt(Event): # block_in state change at sender
 
         evt = TxStartEvt(self._simu, self._timestamp, self._buf_man)
         self._simu.enqueue(evt)
-        print '=== TxEndEvt: executing, time: %f, node id: %d, buf_man id: %d' % \
+        print '=== end TxEndEvt: executing, time: %f, node id: %d, buf_man id: %d\n' % \
                 (self._timestamp, self._buf_man._node._id, self._buf_man._id)
 
 class RxStartEvt(Event): # block_in state change at receiver
@@ -136,6 +139,7 @@ class RxStartEvt(Event): # block_in state change at receiver
         self._tx_time = tx_time
 
     def execute(self):
+        print '\n=== begin RxStartEvt'
         self._chunk.updateTimestamp(self._timestamp)
         self._node.receive(self._chunk)
         print '=== RxStartEvt: executing, time: %f, node id: %d, chunk: ' % (self._timestamp, self._node.id())
@@ -143,10 +147,21 @@ class RxStartEvt(Event): # block_in state change at receiver
 
         evt = RxEndEvt(self._simu, self._timestamp + self._tx_time, self._chunk, self._node)
         self._simu.enqueue(evt)
+        print '=== end RxStartEvt\n'
 
 class RxEndEvt(Event):
     def __init__(self, simu, timestamp, chunk, node):
         super(RxEndEvt, self).__init__(simu, timestamp)
+        self._chunk = chunk
+        self._node = node
+
+    def execute(self):
+        print '\n=== begin RxEndEvt'
+        self._chunk.updateTimestamp(self._timestamp)
+        self._chunk.setStatus(Chunk.BEFORE_TX)
+        print '=== RxEvt: executing, time: %f, node id: %d, chunk: ' % (self._timestamp, self._node.id())
+        self._chunk.show()
+        print '=== end RxEndEvt\n'
 
 class RxEvt(Event):
     ''' Receive-Event. '''

@@ -1,6 +1,7 @@
 import random
 
 class Demand(object):
+    start_t = 0.0
     def __init__(self):
         pass
 
@@ -27,11 +28,12 @@ class Demand(object):
 
     def genOneSrc(self, length, src, dst, size, rate): 
         demand = []
-        t = 0.0
+        t = Demand.start_t
         while t < length:
             dst_id = dst[random.randint(0, len(dst)-1)]
             demand.append([src, dst_id, size, t])
             t += size / rate
+        Demand.start_t += 0.00001
         return demand 
                  
     

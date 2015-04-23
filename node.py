@@ -4,6 +4,7 @@ from event import *
 from main import Simulator
 from cong_ctrl import *
 from log import OutputLogger
+from chunk import Chunk
 
 class Node(object):
     ''' Provides the 'node' abstraction. Because we need to simulate two types of 
@@ -33,7 +34,7 @@ class Node(object):
         #self.buf_man.attachNode(self)
 
     def getBufManByDst(self, dst_id):
-        print 'Node:getBufManByDst: node_id: %d, dst_id: %d' % (self._id, dst_id)
+        #print 'Node:getBufManByDst: node_id: %d, dst_id: %d' % (self._id, dst_id)
         if dst_id not in self.next_hop or self.next_hop[dst_id] not in self.buf_man:
             raise ValueError('Node:getBufMan: buf man not found')
         return self.buf_man[self.next_hop[dst_id]]
@@ -127,6 +128,7 @@ class BaseBuffer(object): # buffer could be for a single interface, or for a sin
         self.max_bytes = 1048576 # max capacity in bytes, 10MB to begin with
         self.cur_bytes = 0
         self.queue = collections.deque()
+        #assert node is not None
         self.cur_node = node
 
 
@@ -170,6 +172,13 @@ class BaseBuffer(object): # buffer could be for a single interface, or for a sin
     def insertEvent(self):
         pass
 
+    def node(self):
+        assert self.cur_node is not None
+        return self.cur_node
+
+    def id(self):
+        return self.buf_id
+
 class AppBuffer(BaseBuffer):
     def insertEvent(self):
         #evt = DownStackEvt(self._node, self.buf_id)
@@ -209,10 +218,16 @@ class LinkBuffer(BaseBuffer):
 
     def attachCongObserver(self, obs_buf):
         self._cong_ctrl.attachObserver(obs_buf)
+        #obs_buf.attachBuf(self)
 
-class LinkBufferPerFlow(LinkBuffer): pass
+class LinkBufferPerFlow(LinkBuffer): 
+    def __init__(self, node, buf_id, cong_ctrl):
+        super(LinkBufferPerFlow, self).__init__(node, buf_id, cong_ctrl)
 
-class LinkBufferPerIf(LinkBuffer): pass
+class LinkBufferPerIf(LinkBuffer): 
+    def __init__(self, node, buf_id, cong_ctrl):
+        #assert node is not None
+        super(LinkBufferPerIf, self).__init__(node, buf_id, cong_ctrl)
 
 class BaseBufferManager(object):
     def __init__(self, simu, id):
@@ -232,6 +247,7 @@ class BaseBufferManager(object):
         return self._buffers[buf_id]
 
     def attachNode(self, node):
+        print 'attach node %d for buf_man %d' % (self.id(), node.id())
         self._node = node
 
     def node(self):
@@ -307,24 +323,27 @@ class LinkBufferManager(BaseBufferManager):
         buf = self._buffers[buf_id]
         if not buf.empty():
             chunk = buf.peek()
-            if chunk.timestamp() <= self._simulator.time():
+            if chunk.timestamp() <= self._simulator.time() and chunk.status() == Chunk.BEFORE_TX:
                 # see if the chunk will go to a block_in buffer
                 next_hop_id = self._node.getNextHop(chunk.dst())
 
                 # for now, assume application is fast, and have infinite buffer
                 if next_hop_id == chunk.dst():
+                    print 'canDq: next_hop_id == chunk.dst()'
                     return True
 
                 next_hop = self._simulator.getNodeById(next_hop_id)
                 next_hop_bufman = next_hop.getBufManByDst(chunk.dst())
                 next_hop_buf = next_hop_bufman.getBufById(next_hop_bufman.id())
 
-                if not buf.congCtrl().isBlockedOut(next_hop_buf, self._simulator.time()):
+                if not buf.congCtrl().isBlockedOut(next_hop_buf.congCtrl(), self._simulator.time()):
+                    print 'canDq: not blocked'
                     return True
         #    else:
         #        print 'queue element too early to push'           
         #else:
         #    print 'queue empty()'
+
         #print 'canDq: NO, for node: %d, buf_man: %d, buf: %d' % \
         #        (self._node.id(), self.id(), buf_id)
         return False
@@ -335,10 +354,12 @@ class LinkBufferManager(BaseBufferManager):
             raise KeyError('buf_id: %d' % (buf_id,))
 
         chunk = None
-        if self.canDequeue(buf_id):
-            buf = self._buffers[buf_id] 
-            dq_time = self._simulator.time() + self.schedInterval(buf.peek())
-            chunk = buf.dequeue(dq_time)
+        #if self.canDequeue(buf_id):
+
+        buf = self._buffers[buf_id] 
+        dq_time = self._simulator.time() + self.schedInterval(buf.peek())
+        chunk = buf.dequeue(dq_time)
+
         return chunk
 
     
@@ -401,17 +422,50 @@ class LinkBufferManagerPerFlow(LinkBufferManager):
                 return -1
             temp_ind += 1
 
+    def canDequeue(self, buf_id):
+        buf = self._buffers[buf_id]
+        if not buf.empty():
+            chunk = buf.peek()
+            if chunk.timestamp() <= self._simulator.time() and chunk.status() == Chunk.BEFORE_TX:
+                # see if the chunk will go to a block_in buffer
+                next_hop_id = self._node.getNextHop(chunk.dst())
+
+                # for now, assume application is fast, and have infinite buffer
+                if next_hop_id == chunk.dst():
+                    print 'canDq: next_hop_id == chunk.dst()'
+                    return True
+
+                next_hop = self._simulator.getNodeById(next_hop_id)
+                next_hop_bufman = next_hop.getBufManByDst(chunk.dst())
+                next_hop_buf = next_hop_bufman.getBufById(chunk.dst())
+
+                if not buf.congCtrl().isBlockedOut(next_hop_buf.congCtrl(), self._simulator.time()):
+                    print 'canDq: not blocked'
+                    return True
+        #    else:
+        #        print 'queue element too early to push'           
+        #else:
+        #    print 'queue empty()'
+        #print 'canDq: NO, for node: %d, buf_man: %d, buf: %d' % \
+        #        (self._node.id(), self.id(), buf_id)
+        return False
+
+
+
 class LinkBufferManagerPerIf(LinkBufferManager):
     ''' per interface queuing '''
     def __init__(self, simu, id, band, lat):
         super(LinkBufferManagerPerIf, self).__init__(simu, id, band, lat)
-        self.addBuffer(self._id)
-        self._buffer = self._buffers[self._id]
+        #self.addBuffer(self._id)
+        
     
     def addBuffer(self, buf_id):
         cong_ctrl = CongControllerPerIf()
+        #assert self._node is not None
         self._buffers[buf_id] = LinkBufferPerIf(self._node, buf_id, cong_ctrl)
         cong_ctrl.attachBuf(self._buffers[buf_id])
+
+        self._buffer = self._buffers[self._id]
 
     def enqueue(self, chunk):
         ''' enqueue based on next hop, instead of dst '''
@@ -420,3 +474,33 @@ class LinkBufferManagerPerIf(LinkBufferManager):
 
     def schedBuffer(self):
         return self._id if self.canDequeue(self._id) else -1
+
+    def canDequeue(self, buf_id):
+        buf = self._buffers[buf_id]
+        if not buf.empty():
+            chunk = buf.peek()
+            if chunk.timestamp() <= self._simulator.time() and chunk.status() == Chunk.BEFORE_TX:
+                # see if the chunk will go to a block_in buffer
+                next_hop_id = self._node.getNextHop(chunk.dst())
+
+                # for now, assume application is fast, and have infinite buffer
+                if next_hop_id == chunk.dst():
+                    print 'canDq: next_hop_id == chunk.dst()'
+                    return True
+
+                next_hop = self._simulator.getNodeById(next_hop_id)
+                next_hop_bufman = next_hop.getBufManByDst(chunk.dst())
+                next_hop_buf = next_hop_bufman.getBufById(next_hop_bufman.id())
+
+                if not buf.congCtrl().isBlockedOut(next_hop_buf.congCtrl(), self._simulator.time()):
+                    print 'canDq: not blocked'
+                    return True
+        #    else:
+        #        print 'queue element too early to push'           
+        #else:
+        #    print 'queue empty()'
+        #print 'canDq: NO, for node: %d, buf_man: %d, buf: %d' % \
+        #        (self._node.id(), self.id(), buf_id)
+        return False
+
+

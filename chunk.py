@@ -11,7 +11,7 @@ class Chunk:
         self._cur_ts = ts # anytime when this chunk is in the network
 
         self._chk_id = chk_id
-        self._state = 1
+        self._state = Chunk.BEFORE_TX
 
     def size(self):
         return self._size
@@ -27,6 +27,9 @@ class Chunk:
 
     def setStatus(self, s):
         self._state = s
+
+    def status(self):
+        return self._state
 
     def updateTimestamp(self, time):
         assert time >= self._cur_ts

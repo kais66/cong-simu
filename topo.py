@@ -54,9 +54,12 @@ class BufManBuilderPerIf(BaseBufManBuilder):
     def buildBufMan(self, simu, node, if_id):
         buf_man = LinkBufferManagerPerIf(simu, if_id, BaseBufManBuilder.band, BaseBufManBuilder.lat)
         buf_man.attachNode(node)
+        buf_man.addBuffer(buf_man.id())
+        assert node is not None
 
         self.buf_man = buf_man
         node.attachBufMan(buf_man)
+
         node.addWeight(BaseBufManBuilder.lat) # by default, use latency as link weight
         evt = TxStartEvt(simu, 0.0, buf_man)
         simu.enqueue(evt)
