@@ -10,8 +10,7 @@ class Simulator(object):
         self._queue = Queue.PriorityQueue()
         self._node_dic = {}
         self._sim_time = 0.0
-        #self._length = 200.0
-        self._length = 2000.0
+        self._length = 5000.0
 
         #self.__dict___ = Simulator.shared_state
         #self.queue = Queue.PriorityQueue()
@@ -22,17 +21,16 @@ class Simulator(object):
 
         tp = TopoGenerator('input_files/topo_9nodes.txt')
 
-        builder = BufManBuilderPerFlow()
-        #builder = BufManBuilderPerIf()
+        #builder = BufManBuilderPerFlow()
+        builder = BufManBuilderPerIf()
 
         tp.parseTopoFile(self, builder)
         tp.genForwardTable(self)
         self._node_dic = tp.getNodeDic()
         builder.genObservers(self, tp)
 
-
         #tf = TrafficGenerator('input_files/traff3000.txt')
-        tf = TrafficGenerator('input_files/traff10000.txt')
+        tf = TrafficGenerator('input_files/traff6750.txt')
         tf.parseTrafficFile(self._node_dic, self)
 
     def enqueue(self, event):

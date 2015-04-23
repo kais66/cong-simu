@@ -13,6 +13,9 @@ class Chunk:
         self._chk_id = chk_id
         self._state = Chunk.BEFORE_TX
 
+    def id(self):   
+        return self._chk_id
+
     def size(self):
         return self._size
 

@@ -35,6 +35,9 @@ class DownStackEvt(Event):
         else:
             print 'DownStackEvt: no chunk to be pushed down'
 
+        evt = TxStartEvt(self._simu, chunk.startTimestamp(), self._node.getBufManByDst(chunk.dst()))
+        self._simu.enqueue(evt)
+
     #def printEvt(self):
         print '=== end executing DownStackEvt\n'
 
@@ -84,9 +87,9 @@ class TxStartEvt(Event):
     def execute(self):
         buf_id = self._buf_man.schedBuffer()
         if buf_id == -1: # nothing to send
-            #print 'TxStartEvt: executing, time: %f, nothing to send for node id: %d, buf_man id: %d' % (self._timestamp, self._buf_man._node._id, self._buf_man._id)
-            evt = TxStartEvt(self._simu, self._timestamp + self._buf_man.schedInterval(), self._buf_man)
-            self._simu.enqueue(evt)
+            print '=== TxStartEvt: executing, time: %f, nothing to send for node id: %d, buf_man id: %d ===' % (self._timestamp, self._buf_man._node._id, self._buf_man._id)
+            #evt = TxStartEvt(self._simu, self._timestamp + self._buf_man.schedInterval(), self._buf_man)
+            #self._simu.enqueue(evt)
             return
         
         print '\n=== begin TxStartEvt'
@@ -147,6 +150,14 @@ class RxStartEvt(Event): # block_in state change at receiver
 
         evt = RxEndEvt(self._simu, self._timestamp + self._tx_time, self._chunk, self._node)
         self._simu.enqueue(evt)
+
+        if self._chunk.dst() != self._node.id():
+            buf_man = self._node.getBufManByDst(self._chunk.dst())
+            # this along with enqueued TxStart at the end of TxEnd, should guarantee every chunk will get scheduled.
+            # because: if there's currently no chunk in q, then this received chunk will be Tx immediately;
+            # else, the remaining chunk in q will scheduled by the other TxStart evt.
+            ts_evt = TxStartEvt(self._simu, self._timestamp + self._tx_time, buf_man)
+            self._simu.enqueue(ts_evt)
         print '=== end RxStartEvt\n'
 
 class RxEndEvt(Event):

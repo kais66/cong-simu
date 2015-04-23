@@ -12,8 +12,6 @@ class Node(object):
     the policy related logic (i.e. bufferMan and congCtrl, which tends to change) '''
     def __init__(self, node_id, cong_ctrl): # these two argument are base class references
         self._id = node_id
-        self.congctrl = cong_ctrl
-
         self.src = None
         self.sink = None
 
@@ -22,7 +20,7 @@ class Node(object):
         self.buf_man = {} # next hop node id : buf_man. next_hop_id is in the meantime buf_man.id
 
         self.next_hop = {} # dst_id : next_hop_id
-        #self.ifs = []
+
     def id(self):
         return self._id
 
@@ -376,7 +374,7 @@ class LinkBufferManagerPerFlow(LinkBufferManager):
         return self._buffers[buf_id]
 
     def addBuffer(self, buf_id):
-        cong_ctrl = CongControllerPerFlow()
+        cong_ctrl = CongControllerPerFlow(self._simulator)
         self._buffers[buf_id] = LinkBufferPerFlow(self._node, buf_id, cong_ctrl)
         cong_ctrl.attachBuf(self._buffers[buf_id])
         print 'added buf: node: %d, buf_man: %d, buf: %d' \
@@ -460,7 +458,7 @@ class LinkBufferManagerPerIf(LinkBufferManager):
         
     
     def addBuffer(self, buf_id):
-        cong_ctrl = CongControllerPerIf()
+        cong_ctrl = CongControllerPerIf(self._simulator)
         #assert self._node is not None
         self._buffers[buf_id] = LinkBufferPerIf(self._node, buf_id, cong_ctrl)
         cong_ctrl.attachBuf(self._buffers[buf_id])
