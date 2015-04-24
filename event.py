@@ -104,7 +104,7 @@ class TxStartEvt(Event):
         next_hop_id = self._buf_man.node().getNextHop(chunk.dst())
         next_hop = self._simu.getNodeById(next_hop_id)
 
-        tx_time = self._timestamp + self._buf_man.schedInterval(chunk)
+        tx_time = self._buf_man.schedInterval(chunk)
 
         rs_evt = RxStartEvt(self._simu, self._timestamp + self._buf_man.latency(), chunk, next_hop, tx_time)
         self._simu.enqueue(rs_evt)
@@ -144,20 +144,25 @@ class RxStartEvt(Event): # block_in state change at receiver
     def execute(self):
         print '\n=== begin RxStartEvt'
         self._chunk.updateTimestamp(self._timestamp)
-        self._node.receive(self._chunk)
+
         print '=== RxStartEvt: executing, time: %f, node id: %d, chunk: ' % (self._timestamp, self._node.id())
         self._chunk.show()
 
-        evt = RxEndEvt(self._simu, self._timestamp + self._tx_time, self._chunk, self._node)
-        self._simu.enqueue(evt)
 
         if self._chunk.dst() != self._node.id():
+            self._node.receive(self._chunk)
+            evt = RxEndEvt(self._simu, self._timestamp + self._tx_time, self._chunk, self._node)
+            self._simu.enqueue(evt)
+
             buf_man = self._node.getBufManByDst(self._chunk.dst())
             # this along with enqueued TxStart at the end of TxEnd, should guarantee every chunk will get scheduled.
             # because: if there's currently no chunk in q, then this received chunk will be Tx immediately;
             # else, the remaining chunk in q will scheduled by the other TxStart evt.
             ts_evt = TxStartEvt(self._simu, self._timestamp + self._tx_time, buf_man)
             self._simu.enqueue(ts_evt)
+        else:
+            evt = FinDeliveryEvt(self._simu, self._timestamp + self._tx_time, self._chunk, self._node)
+            self._simu.enqueue(evt)
         print '=== end RxStartEvt\n'
 
 class RxEndEvt(Event):
@@ -173,6 +178,20 @@ class RxEndEvt(Event):
         print '=== RxEvt: executing, time: %f, node id: %d, chunk: ' % (self._timestamp, self._node.id())
         self._chunk.show()
         print '=== end RxEndEvt\n'
+
+class FinDeliveryEvt(Event):
+    def __init__(self, simu, timestamp, chunk, node):
+        super(FinDeliveryEvt, self).__init__(simu, timestamp)
+        self._chunk = chunk
+        self._node = node
+    def execute(self):
+        print '\n=== begin FinDeliveryEvt'
+        self._chunk.updateTimestamp(self._timestamp)
+        self._chunk.setStatus(Chunk.BEFORE_TX)
+        self._node.finish(self._chunk)
+        print '=== FinDeliveryEvt: executing, time: %f, node id: %d, chunk: ' % (self._timestamp, self._node.id())
+        self._chunk.show()
+        print '=== end FinDeliveryEvt\n'
 
 class RxEvt(Event):
     ''' Receive-Event. '''

@@ -15,7 +15,7 @@ class BaseCongController(object):
         self._buf = buf
 
     def attachObserver(self, obs):
-        if obs is not self:
+        if obs is not self and self._buf.id() != obs._buf.node().id():
             self._obs.append(obs)
 
     def bufMan(self):
@@ -67,15 +67,20 @@ class CongControllerPerFlow(BaseCongController):
         ''' isCong: bool. Identifying whether this is to activate or deactivate back pressure '''
         for ob in self._obs:
             ob._block_out_till = future_time
-            if future_time > 0: 
-                evt = TxStartEvt(ob._simu, future_time, self.bufMan()) 
+
+            evt = None
+            if future_time > 0: # remote interface won't be blocked starting this future_time
+                evt = TxStartEvt(ob._simu, future_time, ob.bufMan()) 
+            elif future_time < 0: # not blocked as of right now
+                evt = TxStartEvt(ob._simu, ob._simu.time(), ob.bufMan()) 
+            if evt:
                 self._simu.enqueue(evt)
 
     def notifyNoCong(self, sub):
         for ob in self._obs:
             ob._block_out_till = -1.0
 
-            evt = TxStartEvt(ob._simu, ob._simu.time(), self.bufMan()) 
+            evt = TxStartEvt(ob._simu, ob._simu.time(), ob.bufMan()) 
             self._simu.enqueue(evt)
 
     def isBlockedOut(self, sub, cur_time):
@@ -113,31 +118,44 @@ class CongControllerPerIf(BaseCongController):
                 (self._buf.node().id(), self._buf.id())
             self.notifyCong(self, 0)
             return True
+
+        if self._block_in and self._buf.numBytes() < self._buf.capacity():
+            assert future_time is not None
+            self._block_in = False
+            print 'BlockInState: --> unblocked'
+            self.notifyCong(self, future_time)
+            return True
         return False
 
     def notifyNoCong(self, sub):
         for ob in self._obs:
             ob._block_out_till[sub] = -1.0
 
-            evt = TxStartEvt(ob._simu, ob._simu.time(), self.bufMan()) 
+            evt = TxStartEvt(ob._simu, ob._simu.time(), ob.bufMan()) 
             self._simu.enqueue(evt)
 
     def notifyCong(self, sub, future_time):
         for ob in self._obs:
+            #if sub._buf.id() == ob._buf.node().id(): # e.g. node 1's buf 3 blocked in, don't notify node 3's buf 1
+            #    continue
             ob._block_out_till[sub] = future_time
-            print 'notifyCong: block_out: node: %d, buf: %d, block_in: node: %d, buf: %d' % \
-                (ob._buf.node().id(), ob._buf.id(), sub._buf.node().id(), sub._buf.id())
-            print ob
-            print sub
-            if future_time > 0: 
-                evt = TxStartEvt(ob._simu, future_time, self.bufMan()) 
+            print 'notifyCong: future_time: %f, block_out: node: %d, buf: %d, block_in: node: %d, buf: %d' % \
+                (future_time, ob._buf.node().id(), ob._buf.id(), sub._buf.node().id(), sub._buf.id())
+            #print ob
+            #print sub
+            evt = None
+            if future_time > 0: # remote interface won't be blocked starting this future_time
+                evt = TxStartEvt(ob._simu, future_time, ob.bufMan()) 
+            elif future_time < 0: # not blocked as of right now
+                evt = TxStartEvt(ob._simu, ob._simu.time(), ob.bufMan()) 
+            if evt:
                 self._simu.enqueue(evt)
             
 
     def isBlockedOut(self, sub, cur_time):
         ret = None
-        print 'isBlockedOut'
-        print sub
+        #print 'isBlockedOut'
+        #print sub
         if sub not in self._block_out_till: # meaning sub is not a subject for this observer
             print '!!! congestion subject not found '
             ret = False
@@ -151,5 +169,5 @@ class CongControllerPerIf(BaseCongController):
                 ret = (cur_time < future_time)
 
         if ret:
-            print '!!! CongController: blocked. '
+            print '!!! CongController: blocked till %f' % (future_time)
         return ret

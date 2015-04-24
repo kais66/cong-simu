@@ -10,7 +10,7 @@ class Simulator(object):
         self._queue = Queue.PriorityQueue()
         self._node_dic = {}
         self._sim_time = 0.0
-        self._length = 5000.0
+        self._length = 50000.0
 
         #self.__dict___ = Simulator.shared_state
         #self.queue = Queue.PriorityQueue()
@@ -30,7 +30,7 @@ class Simulator(object):
         builder.genObservers(self, tp)
 
         #tf = TrafficGenerator('input_files/traff3000.txt')
-        tf = TrafficGenerator('input_files/traff6750.txt')
+        tf = TrafficGenerator('input_files/traff_poisson_3000.txt')
         tf.parseTrafficFile(self._node_dic, self)
 
     def enqueue(self, event):

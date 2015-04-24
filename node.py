@@ -67,15 +67,18 @@ class Node(object):
 
         # if cur node is dst, send it to sink, else enqueue at link buffer manager
         if chunk.dst() == self._id:
+            raise ValueError("chunk shouldn't be here")
             # sink should handle it
-            self.sink.finish(chunk)
+            # self.sink.finish(chunk)
         else:
             # find out the next hop for this chunk (i.e. corresponding buf_man)
             next_hop = self.next_hop[chunk.dst()]
 
             # then call corresponding buf_man's enqueue
             self.buf_man[next_hop].enqueue(chunk)
-        
+    def finish(self, chunk):
+        self.sink.finish(chunk)
+    
     def addNbr(self, nbr):
         self.nbrs.append(nbr)
     def addWeight(self, weight):
@@ -123,7 +126,7 @@ class TrafficSink:
 class BaseBuffer(object): # buffer could be for a single interface, or for a single flow
     def __init__(self, node, buf_id):
         self.buf_id = buf_id
-        self.max_bytes = 1048576 # max capacity in bytes, 10MB to begin with
+        self.max_bytes = 1048576*2 # max capacity in bytes, 10MB to begin with
         self.cur_bytes = 0
         self.queue = collections.deque()
         #assert node is not None
@@ -144,7 +147,10 @@ class BaseBuffer(object): # buffer could be for a single interface, or for a sin
         #self.curNode(cur_node)
         print 'BaseBuffer:enqueue the chunk'
 
-    def dequeue(self, dq_time): pass
+    def dequeue(self, dq_time): 
+        chunk = self.queue.popleft()
+        self.decreCurBytes(chunk.size())
+        return chunk
 
     def empty(self):
         return False if self.queue else True
@@ -166,6 +172,7 @@ class BaseBuffer(object): # buffer could be for a single interface, or for a sin
 
     def decreCurBytes(self, dec):
         self.cur_bytes -= dec
+        assert self.cur_bytes >= 0
     
     def insertEvent(self):
         pass
@@ -205,8 +212,8 @@ class LinkBuffer(BaseBuffer):
 
     def dequeue(self, dq_time):
         ''' dequeue time should be the receiving time, i.e. Tx timestamp plus time it takes to Tx the whole chunk '''
+        chunk = super(LinkBuffer, self).dequeue(dq_time)
         # need to check, if removing this chunk may cause any change in block_in states
-        chunk = self.queue.popleft()
         self._cong_ctrl.updateBlockInState(dq_time)
         return chunk
 
@@ -355,8 +362,8 @@ class LinkBufferManager(BaseBufferManager):
         #if self.canDequeue(buf_id):
 
         buf = self._buffers[buf_id] 
-        dq_time = self._simulator.time() + self.schedInterval(buf.peek())
-        chunk = buf.dequeue(dq_time)
+        #dq_time = self._simulator.time() + self.schedInterval(buf.peek())
+        chunk = buf.dequeue(self._simulator.time())
 
         return chunk
 
