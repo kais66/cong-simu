@@ -110,9 +110,9 @@ class TrafficSrc(object):
             
 
 class TrafficSink:
-    def __init__(self, node):
+    def __init__(self, node, logger):
         self._node = node
-        self._logger = OutputLogger()
+        self._logger = logger
 
     def finish(self, chunk):
         print '*** TrafficSink:finish, node %d' % (self._node.id())
@@ -126,7 +126,7 @@ class TrafficSink:
 class BaseBuffer(object): # buffer could be for a single interface, or for a single flow
     def __init__(self, node, buf_id):
         self.buf_id = buf_id
-        self.max_bytes = 1048576*2 # max capacity in bytes, 10MB to begin with
+        self.max_bytes = 1048576*10 # max capacity in bytes, 10MB to begin with
         self.cur_bytes = 0
         self.queue = collections.deque()
         #assert node is not None

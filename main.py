@@ -1,36 +1,41 @@
 # python lib
 import Queue
+import sys
+import os
 
 # my own modules
 from topo import *
 
-
 class Simulator(object):
-    def __init__(self):
+    def __init__(self, cong_str, rate_str):
         self._queue = Queue.PriorityQueue()
         self._node_dic = {}
         self._sim_time = 0.0
-        self._length = 50000.0
+        self._length = 200000.0
 
+        self._cong_str = cong_str
+        self._rate_str = rate_str 
+        self._logger = OutputLogger('output/respTimes_{}_{}.csv'.format(self._cong_str, self._rate_str))
         #self.__dict___ = Simulator.shared_state
         #self.queue = Queue.PriorityQueue()
 
     def loadInput(self):
+        ''' cong_str: 'PerFlow' or 'PerIf'; rate_str: integer between 3000 and 10000. '''
         print 'simulator:loadInput'
-        #Simulator.queue = Queue.PriorityQueue()
-
         tp = TopoGenerator('input_files/topo_9nodes.txt')
 
-        #builder = BufManBuilderPerFlow()
-        builder = BufManBuilderPerIf()
+        fac = BuilderFactory(self._cong_str)
+        builder = fac.getBuilder()
 
         tp.parseTopoFile(self, builder)
         tp.genForwardTable(self)
         self._node_dic = tp.getNodeDic()
         builder.genObservers(self, tp)
 
-        #tf = TrafficGenerator('input_files/traff3000.txt')
-        tf = TrafficGenerator('input_files/traff_poisson_3000.txt')
+        traf_file = 'input_files/traff_poisson_{}.txt'.format(self._rate_str)
+        if not os.path.exists(traf_file):
+            raise IOError("traf_file doesn't exist: {}".format(traf_file))
+        tf = TrafficGenerator(traf_file)
         tf.parseTrafficFile(self._node_dic, self)
 
     def enqueue(self, event):
@@ -70,11 +75,16 @@ class Simulator(object):
     def nodesDic(self):
         return self._node_dic
 
+    def logToFile(self):
+        self._logger.write()
+
 if __name__ == '__main__':
-    sim = Simulator()
+    if len(sys.argv) != 3: 
+        print 'usage: main.py cong_str rate_str'
+        sys.exit(-1)
+    
+    sim = Simulator(sys.argv[1], sys.argv[2])
     sim.loadInput()
     sim.run()
-    for nd in sim.nodes():
-        if nd.sink is not None:
-            nd.sink.logToFile()
+    sim.logToFile()
     print 'succeeded'

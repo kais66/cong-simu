@@ -3,10 +3,24 @@ from chunk import *
 import sys
 import Queue
 
+class BuilderFactory(object):
+    def __init__(self, builder_str):
+        self._name = builder_str
+
+    def getBuilder(self):
+        ret = None
+        if self._name == 'PerFlow':
+            ret = BufManBuilderPerFlow()
+        elif self._name == 'PerIf':
+            ret = BufManBuilderPerIf()
+        else:
+            raise AttributeError('wrong string')
+        return ret
+
 class BaseBufManBuilder(object):
     #band = 131072.0 # unit: byte per ms, == 1Gbps
     band = 6750.0 # byte per ms, == 54 Mbps
-    lat = 0.0 # ms
+    lat = 5.0 # ms
     def __init__(self):
         pass
 
@@ -118,7 +132,7 @@ class TrafficGenerator(object):
 
                 dst_node = node_dic[dst_id]
                 if not dst_node.sink:
-                    sink = TrafficSink(dst_node)
+                    sink = TrafficSink(dst_node, simu._logger)
                     dst_node.attachSink(sink)
 
             except ValueError as e:

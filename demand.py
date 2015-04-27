@@ -1,15 +1,17 @@
 import random
+import sys
 
 class Demand(object):
     start_t = 0.0
     def __init__(self):
         pass
 
-    def generate(self):
-        length = 10000.0
+    def generate(self, band_str):
+        length = 100000.0
 
         #rate = 3000.0 # or 6750, 10000, 
-        self.band = 3000.0 # bytes per ms
+        #self.band = 10000.0 # bytes per ms
+        self.band = float(band_str)
         src = [1, 2]
         dst = [6, 7, 8, 9]
 
@@ -53,5 +55,9 @@ class Demand(object):
             for line in demand:
                 f.write(','.join([str(x) for x in line]) + '\n') 
 
-d = Demand()
-d.generate()
+if __name__ == "__main__":
+    if len(sys.argv) != 2:
+        print "usage: python demand.py rate_str"
+        sys.exit(-1)
+    d = Demand()
+    d.generate(sys.argv[1])
