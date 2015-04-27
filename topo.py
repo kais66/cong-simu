@@ -226,7 +226,7 @@ class TopoGenerator(object):
             nd = q.get()[1]
             if nd.id() in visited: continue
             
-            print 'dijk: visiting node: %d' % (nd.id())
+            #print 'dijk: visiting node: %d' % (nd.id())
             visited.add(nd.id())
 
             # next hop bookkeeping 
@@ -243,13 +243,13 @@ class TopoGenerator(object):
             for i in xrange(len(nd.nbrs)):
                 nbr, weight = nd.nbrs[i], nd.weights[i]
                 if dist[nbr.id()] > dist[nd.id()] + weight:
-                    print 'dijk: visiting nbr: %d' % (nbr.id())
+                    #print 'dijk: visiting nbr: %d' % (nbr.id())
                     dist[nbr.id()] = dist[nd.id()] + weight
                     pred[nbr.id()] = nd.id()
                     q.put((dist[nbr.id()], nbr))
 
         node.next_hop = next_hop
-        print next_hop
+        #print next_hop
 
         self.src_pred_dic[node.id()] = pred
 

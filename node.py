@@ -145,7 +145,7 @@ class BaseBuffer(object): # buffer could be for a single interface, or for a sin
         self.queue.append(chunk)
         self.increCurBytes(chunk.size())
         #self.curNode(cur_node)
-        print 'BaseBuffer:enqueue the chunk'
+        #print 'BaseBuffer:enqueue the chunk'
 
     def dequeue(self, dq_time): 
         chunk = self.queue.popleft()
@@ -193,7 +193,7 @@ class AppBuffer(BaseBuffer):
         self.queue.append(chunk)
         self.increCurBytes(chunk.size())
         #self.curNode(cur_node)
-        print 'AppBuffer:enqueue the chunk'
+        #print 'AppBuffer:enqueue the chunk'
     
     def dequeue(self, dq_time):
         return self.queue.popleft()
@@ -252,7 +252,7 @@ class BaseBufferManager(object):
         return self._buffers[buf_id]
 
     def attachNode(self, node):
-        print 'attach node %d for buf_man %d' % (self.id(), node.id())
+        #print 'attach node %d for buf_man %d' % (self.id(), node.id())
         self._node = node
 
     def node(self):
@@ -384,11 +384,11 @@ class LinkBufferManagerPerFlow(LinkBufferManager):
         cong_ctrl = CongControllerPerFlow(self._simulator)
         self._buffers[buf_id] = LinkBufferPerFlow(self._node, buf_id, cong_ctrl)
         cong_ctrl.attachBuf(self._buffers[buf_id])
-        print 'added buf: node: %d, buf_man: %d, buf: %d' \
+        #print 'added buf: node: %d, buf_man: %d, buf: %d' \
                 % (self._node.id(), self._id, buf_id)
 
     def enqueue(self, chunk):
-        print 'linkBufManPerFlow: enqueue'
+        #print 'linkBufManPerFlow: enqueue'
         dst_id = chunk.dst() 
         if dst_id not in self._buffers:
             raise KeyError("buf for dst: %d should've been created on node: %d, buf: %d" \
@@ -399,7 +399,7 @@ class LinkBufferManagerPerFlow(LinkBufferManager):
         self._buffers[dst_id].enqueue(chunk)
 
         # if last hop is not in cong_ctrl's observers, attach it
-        print 'linkBufManPerFlow: enqueue a chunk at node %d buf_man %d buf %d' \
+        #print 'linkBufManPerFlow: enqueue a chunk at node %d buf_man %d buf %d' \
                 % (self._node._id, self._id, dst_id)
 
     def schedBuffer(self):
