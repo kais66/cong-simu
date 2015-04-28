@@ -385,7 +385,7 @@ class LinkBufferManagerPerFlow(LinkBufferManager):
         self._buffers[buf_id] = LinkBufferPerFlow(self._node, buf_id, cong_ctrl)
         cong_ctrl.attachBuf(self._buffers[buf_id])
         #print 'added buf: node: %d, buf_man: %d, buf: %d' \
-                % (self._node.id(), self._id, buf_id)
+                #% (self._node.id(), self._id, buf_id)
 
     def enqueue(self, chunk):
         #print 'linkBufManPerFlow: enqueue'
