@@ -18,7 +18,8 @@ class Demand(object):
         size = 1048576
         demand = []
         for s in src:
-            demand.extend(self.genOneSrcPoisson(length, s, dst, size))
+            #demand.extend(self.genOneSrcPoisson(length, s, dst, size))
+            demand.extend(self.genOneSrcPoissonSkewed(length, s, dst, size))
         demand.sort(key=lambda x: x[3])
         chk_id = 1
         for l in demand:
@@ -46,6 +47,17 @@ class Demand(object):
             arrival_rate = float(self.band) / size
             t += random.expovariate(arrival_rate) # this function takes mean rate as arg, or reciprocal of inter-arr time
             demand.append([src, dst_id, size, t])
+        return demand
+    def genOneSrcPoissonSkewed(self, length, src, dst, size):
+        demand = []
+        t = 0
+        cnt = 0
+        while t < length:
+            dst_id = (dst[-1] if cnt%2==0 else dst[random.randint(0, len(dst)-2)])
+            arrival_rate = float(self.band) / size
+            t += random.expovariate(arrival_rate) # this function takes mean rate as arg, or reciprocal of inter-arr time
+            demand.append([src, dst_id, size, t])
+            cnt += 1
         return demand
                  
     
