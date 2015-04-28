@@ -304,6 +304,7 @@ class LinkBufferManager(BaseBufferManager):
         self._band = band # bandwidth, unit: byte per ms
         self._lat = lat # latency: between self._node and the next hop which this buffer is for
         self._intv = 1.0 # length of scheduling interval in ms, later can change this to 1,000,000/band
+        self._tx_until = 0.0
 
     def latency(self):
         return self._lat
@@ -400,7 +401,7 @@ class LinkBufferManagerPerFlow(LinkBufferManager):
 
         # if last hop is not in cong_ctrl's observers, attach it
         #print 'linkBufManPerFlow: enqueue a chunk at node %d buf_man %d buf %d' \
-                % (self._node._id, self._id, dst_id)
+                #% (self._node._id, self._id, dst_id)
 
     def schedBuffer(self):
         ''' Round Robin scheduling. If there's an available buffer with data in it, schedule it; else if no such buffer exist,
