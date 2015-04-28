@@ -17,6 +17,7 @@ class Demand(object):
 
         size = 1048576
         demand = []
+        random.seed()
         for s in src:
             #demand.extend(self.genOneSrcPoisson(length, s, dst, size))
             demand.extend(self.genOneSrcPoissonSkewed(length, s, dst, size))
