@@ -298,6 +298,26 @@ class AppBufferManager(BaseBufferManager):
             chunk = buf.dequeue(-1.0)
         return chunk
 
+class AppBufferManagerWithECN(AppBufferManager):
+    def __init__(self, simu, id):
+        super(AppBufferManagerWithECN, self).__init__(simu, id)
+        self._dst_to_delay = {}
+
+    def enqueue(self, chunk):
+        ''' First execute the same logic as AppBufferManager.enqueue; but keep a reference of the location of 
+            inserted event in priority queue. '''
+        dst_id = chunk.dst() 
+        if dst_id not in self._buffers:
+            self.addBuffer(dst_id)
+        
+
+        #self.
+    def getDstDelay(self, dst_id):
+        if dst_id not in self._dst_to_delay:
+            return 0.0
+        else:
+            return self._dst_to_delay[dst_id] 
+
 class LinkBufferManager(BaseBufferManager):
     def __init__(self, simu, id, band, lat):
         super(LinkBufferManager, self).__init__(simu, id)

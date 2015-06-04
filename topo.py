@@ -90,7 +90,10 @@ class BufManBuilderPerIf(BaseBufManBuilder):
         cur_buf = cur_buf_man.getBufById(cur_buf_man.id())
         pred_buf_man = pred_nd.getBufManByNextHop(cur_buf_man.node().id())
         cur_buf.attachCongObserver(pred_buf_man.getBufById(pred_buf_man.id()).congCtrl())
-        
+
+class BufManBuilderPerIfWithECN(BaseBufManBuilder):
+    def buildBufMan(self, simu, node, if_id):
+        pass
 
 class TrafficGenerator(object):
     ''' 

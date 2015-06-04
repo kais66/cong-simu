@@ -10,6 +10,8 @@ class Chunk:
         self._start_ts = ts # timestamp when the ultimate source pushes this chunk out
         self._cur_ts = ts # anytime when this chunk is in the network
 
+        self._sending_delay = 0.0 # this is the delay caused by ECN
+
         self._chk_id = chk_id
         self._state = Chunk.BEFORE_TX
 
