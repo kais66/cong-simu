@@ -148,6 +148,16 @@ class TopoGenerator(object):
         self.topo_file = topo_file
         self.node_dic = {}
         self.src_pred_dic = {} # { dst : {node_id : pred_id}}
+
+        # parameters identifying if ECN/storage is enabled
+        self.is_ECN = False
+        self.is_storage = False
+
+    def __initECNAndStorage(self, cur_node):
+        if self.is_ECN:
+            cur_node.attachQueueMan(QueueManager(cur_node))
+        if self.is_storage:
+            cur_node.attachStorageMan(StorageManager(cur_node))
          
     def parseTopoFile(self, simu, buf_man_builder):
         try:
@@ -166,6 +176,8 @@ class TopoGenerator(object):
                 if node_id not in self.node_dic:
                     self.node_dic[node_id] = Node(node_id, None)
 
+                    self.__initECNAndStorage(self.node_dic[node_id]) 
+
                     #buf_man = BaseBufferManager(simu)
                     #buf_man.attachNode(node)
                     #node.attachBufMan(buf_man)
@@ -183,6 +195,7 @@ class TopoGenerator(object):
                     nbr = None
                     if nbr_id not in self.node_dic:
                         self.node_dic[nbr_id] = Node(nbr_id, None)
+                        self.__initECNAndStorage(self.node_dic[nbr_id]) 
                         #nbr = Node(nbr_id, None)
                         #buf_man = BaseBufferManager(simu)
                         #buf_man.attachNode(nbr)

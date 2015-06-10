@@ -87,7 +87,7 @@ class Simulator(object):
 
 if __name__ == '__main__':
     if len(sys.argv) != 3: 
-        print 'usage: main.py cong_str rate_str'
+        print 'usage: main.py cong_str rate_str '
         sys.exit(-1)
     
     sim = Simulator(sys.argv[1], sys.argv[2])

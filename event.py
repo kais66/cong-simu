@@ -42,6 +42,7 @@ class DownStackEvt(Event):
         print '=== end executing DownStackEvt\n'
 
 class DownStackWithECNEvt(Event):
+    ''' with this event, before calling downstack, we check if it is indeed time to push down the chunk. '''
     def __init__(self, simu, timestamp, node, dst_id):
         super(DownStackEvt, self).__init__(simu, timestamp)
         self._node = node
