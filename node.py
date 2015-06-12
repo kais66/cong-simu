@@ -21,7 +21,6 @@ class Node(object):
 
         self.next_hop = {} # dst_id : next_hop_id
 
-        self.queue_man = None
         self.storage_man = None
 
     def id(self):
@@ -50,6 +49,10 @@ class Node(object):
         if next_hop_id not in self.buf_man:
             raise KeyError('Node:getBufMan: next hop not found')
         return self.buf_man[next_hop_id]
+
+    def getBufManById(self, buf_man_id):
+        # buf_man_id is essentially next hop id
+        return self.getBufManByNextHop(buf_man_id)
 
     def getNextHop(self, dst_id):
         assert dst_id in self.next_hop
@@ -136,7 +139,9 @@ class TrafficSink:
 class BaseBuffer(object): # buffer could be for a single interface, or for a single flow
     def __init__(self, node, buf_id):
         self.buf_id = buf_id
-        self.max_bytes = 1048576*10 # max capacity in bytes, 10MB to begin with
+        #self.max_bytes = 1048576*10 # max capacity in bytes, 10MB to begin with
+        self.max_bytes = 1048576*100 # max capacity in bytes, 10MB to begin with
+
         self.cur_bytes = 0
         self.queue = collections.deque()
         #assert node is not None
@@ -244,3 +249,12 @@ class LinkBufferPerIf(LinkBuffer):
         #assert node is not None
         super(LinkBufferPerIf, self).__init__(node, buf_id, cong_ctrl)
 
+        # because per-if buf_man has single buffer, whose id is the same as buf_man_id
+        buf_man_id = self.id()
+        self._buf_man = self._node.getBufManById(buf_man_id)
+
+    def enqueue(self, chunk):
+        ''' has ECN capability '''
+        super(LinkBufferPerIf, self).enqueue(chunk)
+        self._buf_man.doECN(chunk)
+         

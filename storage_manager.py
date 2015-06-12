@@ -1,6 +1,12 @@
 class StorageManager(object):
     ''' 
         How storage is used: 
+        1. In BufMan.schedBuf(), 
+            * it first checks if there's chunks stored. If there is, retrieve 
+                it and return.
+            * If there isn't, try to schedule from buffer. (with Per-If queuing)
+                if a chunk is blocked, push it to storage. Repeat this until 
+                either a non-blocked chunk is found, or 
     '''
     def __init__(self, node):
         self._node = node

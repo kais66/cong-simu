@@ -9,8 +9,8 @@ from prio_queue import HeapElement, PrioQueue
 
 class Simulator(object):
     def __init__(self, cong_str, rate_str):
-        #self._queue = Queue.PriorityQueue()
-        self._queue = PrioQueue()
+        self._queue = Queue.PriorityQueue()
+        #self._queue = PrioQueue()
         self._node_dic = {}
         self._sim_time = 0.0
         self._length = 200000.0
@@ -43,11 +43,13 @@ class Simulator(object):
     def enqueue(self, event):
         #print 'simu:enqueue, evt with timestamp: %f' % (event.timestamp(),)
         #print 'evt q len: %d' % (self._queue.qsize())
-        #self._queue.put((event.timestamp(), event,))
 
-        heapElement = HeapElement(event.timestamp(), event)
-        self._queue.put(heapElement)
-        return heapElement
+        self._queue.put((event.timestamp(), event,))
+
+        ## if using the customized priority queue
+        #heapElement = HeapElement(event.timestamp(), event)
+        #self._queue.put(heapElement)
+        #return heapElement
 
     def run(self):
         print 'simu:run'
@@ -56,8 +58,8 @@ class Simulator(object):
         # run
         print 'evt q len: %d' % (self._queue.qsize())
         while self._sim_time < self._length and not self._queue.empty():
-            #ev = self._queue.get()[1] # get() returns a tuple
-            ev = self._queue.get().appObject() 
+            ev = self._queue.get()[1] # get() returns a tuple
+            #ev = self._queue.get().appObject() 
             self._sim_time = ev.timestamp()
             ev.execute()
 

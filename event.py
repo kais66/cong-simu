@@ -79,45 +79,20 @@ class DownStackWithECNEvt(Event):
         print '=== end executing DownStackEvt\n'
 
 
-class TxEvt(Event):
-    def __init__(self, simu, timestamp, buf_man):
-        super(TxEvt, self).__init__(simu, timestamp)
-        self._buf_man = buf_man
-        
-
-    def execute(self):
-        buf_id = self._buf_man.schedBuffer()
-        if buf_id == -1: # nothing to send
-            #print 'TxEvt: executing, time: %f, nothing to send for node id: %d, buf_man id: %d' % (self._timestamp, self._buf_man._node._id, self._buf_man._id)
-            evt = TxEvt(self._simu, self._timestamp + self._buf_man.schedInterval(), self._buf_man)
-            self._simu.enqueue(evt)
-            return
-
-        # now, 'Transmit' for this buffer
-        chunk = self._buf_man.dequeue(buf_id)
-        assert chunk is not None
-        chunk.updateTimestamp(self._timestamp)
-
-        print 'TxEvt: executing, time: %f, node id: %d, buf_man id: %d' % (self._timestamp, self._buf_man._node._id, self._buf_man._id)
-        chunk.show()
-        
-        recv_time = self._timestamp + self._buf_man.schedInterval(chunk)
-        next_hop_id = self._buf_man.node().getNextHop(chunk.dst())
-        next_hop = self._simu.getNodeById(next_hop_id)
-
-        revt = RxEvt(self._simu, recv_time, chunk, next_hop)
-        self._simu.enqueue(revt)
-
-        # somebody needs to receive/enqueue it
-        #next_hop.receive(chunk)
-
-        # schedule next Tx
-        evt = TxEvt(self._simu, self._timestamp + self._buf_man.schedInterval(chunk), self._buf_man)
-        self._simu.enqueue(evt)
-
+###############################################################################
+# TxStartEvt: execution of this event attmpts to schedule a chunk for transfer.
+# When is this event generated?
+# 1. At the src, in DownStackEvt; 
+# 2. In TxEndEvt: when a chunk finishes Tx, the next chk is scheduled;
+# 3. In RxStartEvt: when a new chunk arrives and it becomes the only chk in q;
+# 4. In function CongController.notifyCong():
+#       when backpressure is resolved, chks should be scheduled.
+###############################################################################
 class TxStartEvt(Event): 
-    ''' try schedBuf, if able to Tx, set Chunk status to 'during_Tx', enqueue it at receiver (RxStart), and enqueue a 
-        TxEnd Evt; else, enqueue an TxStartEvt for next interval '''
+    ''' 
+        try schedBuf, if able to Tx, set Chunk status to 'during_Tx', enqueue it at receiver (RxStart), and enqueue a 
+        TxEnd Evt; else, enqueue an TxStartEvt for next interval 
+    '''
     def __init__(self, simu, timestamp, buf_man):
         super(TxStartEvt, self).__init__(simu, timestamp)
         self._buf_man = buf_man

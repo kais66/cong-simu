@@ -41,7 +41,8 @@ class CongControllerPerFlow(BaseCongController):
         upstream buffer, i.e. observer). '''
     def __init__(self, simu):
         super(CongControllerPerFlow, self).__init__(simu)
-        self._ostd_chk_limit = 1
+        #self._ostd_chk_limit = 1
+        self._ostd_chk_limit = 100
 
         # till when is outgoing traffic blocked: -1 means not blocked, 0 means blocked indefinitely, otherwise
         # blocked until the nominal time.
@@ -101,12 +102,15 @@ class CongControllerPerFlow(BaseCongController):
 
 # A problem with per-if queuing is: if multiple upstream outgoing buffer
 class CongControllerPerIf(BaseCongController):
-    ''' Per interface queuing. 1. Subject is an interface, i.e. perIfBuf (note not buf_man). A buf has limit on buffering, if this
+    ''' 
+        Per interface queuing. 1. Subject is an interface, i.e. perIfBuf (note not buf_man). A buf has limit on buffering, if this
         limit is reached, it's not accepting additional data. For each upstream node, essentially blocking all 
         flows that will travel through the congested interface. 2. The congested interface can also notify the 
         source of the traffic, i.e. app_buf_man of a source node. 
         Note: another way of per-interface queuing is: a shared buffer space for all outgoing interfaces. This implementation is 
-        for the first way. ''' 
+        for the first way. 
+    ''' 
+
     def __init__(self, simu):
         super(CongControllerPerIf, self).__init__(simu)
         self._block_out_till = {} # cong_ctrl_subject : future_time

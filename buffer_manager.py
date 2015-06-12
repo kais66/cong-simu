@@ -1,11 +1,20 @@
+###############################################################################
+# BufferManager classes
+# Each buffer manager (except AppBufMan) corresponds to one egress interface.
+# It manages buffers for that interface.
+###############################################################################
+from node import *
 
 class BaseBufferManager(object):
+    MB_1 = 1048576
     def __init__(self, simu, id):
         self._node = None
         self._id = id
         self._buffers = {}  # id : buffer, id means differently in different context: next hop, or dst id
         self._simulator = simu
         
+        self._cur_byte = 0
+        self._MAX_BYTE = MB_1 * 10
 
     def id(self):
         return self._id
@@ -33,13 +42,17 @@ class BaseBufferManager(object):
         ''' given an index to a buffer, determine if we can dequeue a chunk (i.e. not blocked) from it. Returns a boolean '''
         pass
 
-    def receive(self, chunk):
-        ''' receive some data: increment buffer occupancy counter '''
-        pass
+    def curTotalByte(self):
+        return self._cur_byte
 
-    def send(self):
-        pass
+    def occupancyPercent(self):
+        return float(self._cur_byte) / self._MAX_BYTE
 
+
+
+###############################################################################
+# AppBufferManager class
+###############################################################################
 class AppBufferManager(BaseBufferManager):
     def addBuffer(self, buf_id):
         self._buffers[buf_id] = AppBuffer(self._node, buf_id)
@@ -77,6 +90,13 @@ class AppBufferManagerWithECN(AppBufferManager):
         
 
         #self.
+
+    def addDelqy(self, dst_id, delayToAdd):
+        if dst_id not in self._dst_to_delay:
+            self._dst_to_delay[dst_id] = delayToAdd
+        else:
+            self._dst_to_delay += delayToAdd
+
     def getDstDelay(self, dst_id):
         if dst_id not in self._dst_to_delay:
             return 0.0
@@ -104,7 +124,12 @@ class LinkBufferManager(BaseBufferManager):
             return chunk.size()/self._band 
          
     def schedBuffer(self): 
-        ''' return a buf_id of which we will send a chunk from '''
+        ''' 
+            return a buf_id of which we will send a chunk from.
+            This buffer is: 
+            1. not being blocked due to backpressure; 
+            2. non-empty, i.e. has chunks; 
+        '''
         pass
 
     def schedNextTx(self):
@@ -151,6 +176,9 @@ class LinkBufferManager(BaseBufferManager):
         #dq_time = self._simulator.time() + self.schedInterval(buf.peek())
         chunk = buf.dequeue(self._simulator.time())
 
+        # bookkeeping
+        self._cur_byte -= chunk.size()
+
         return chunk
 
     
@@ -183,6 +211,9 @@ class LinkBufferManagerPerFlow(LinkBufferManager):
         
         buf = self._buffers[dst_id]
         self._buffers[dst_id].enqueue(chunk)
+        
+        # bookkeeping related to capacity
+        self._cur_byte += chunk.size()
 
         # if last hop is not in cong_ctrl's observers, attach it
         #print 'linkBufManPerFlow: enqueue a chunk at node %d buf_man %d buf %d' \
@@ -248,7 +279,10 @@ class LinkBufferManagerPerIf(LinkBufferManager):
     def __init__(self, simu, id, band, lat):
         super(LinkBufferManagerPerIf, self).__init__(simu, id, band, lat)
         #self.addBuffer(self._id)
-        
+        self._queue_man = None
+
+    def attachQueueMan(self, queue_man):
+        self._queue_man = queue_man        
     
     def addBuffer(self, buf_id):
         cong_ctrl = CongControllerPerIf(self._simulator)
@@ -262,6 +296,9 @@ class LinkBufferManagerPerIf(LinkBufferManager):
         ''' enqueue based on next hop, instead of dst '''
         print 'LinkBufferManagerPerIf: enqueue'
         self._buffer.enqueue(chunk)
+
+        # bookkeeping related to capacity
+        self._cur_byte += chunk.size()
 
     def schedBuffer(self):
         return self._id if self.canDequeue(self._id) else -1
@@ -294,4 +331,6 @@ class LinkBufferManagerPerIf(LinkBufferManager):
         #        (self._node.id(), self.id(), buf_id)
         return False
 
-
+    def doECN(self, chunk):
+        print 'LinkBufferManagerPerIf: doECN'
+        delay = self._queue_man.decideFlowDelay(chunk)
