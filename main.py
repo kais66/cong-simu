@@ -6,17 +6,20 @@ import os
 # my own modules
 from topo import *
 from prio_queue import HeapElement, PrioQueue
+from config import Config
 
 class Simulator(object):
-    def __init__(self, cong_str, rate_str):
+    def __init__(self, config):
+        ''' config is a Config object '''
         self._queue = Queue.PriorityQueue()
         #self._queue = PrioQueue()
         self._node_dic = {}
         self._sim_time = 0.0
         self._length = 200000.0
+        self._config = config
 
-        self._cong_str = cong_str
-        self._rate_str = rate_str 
+        self._cong_str = config.exp_type
+        self._rate_str = config.rate_str 
         self._logger = OutputLogger('output/respTimes_{}_{}.csv'.format(self._cong_str, self._rate_str))
         #self.__dict___ = Simulator.shared_state
         #self.queue = Queue.PriorityQueue()
@@ -26,7 +29,7 @@ class Simulator(object):
         print 'simulator:loadInput'
         tp = TopoGenerator('input_files/topo_9nodes.txt')
 
-        fac = BuilderFactory(self._cong_str)
+        fac = BuilderFactory(self._config)
         builder = fac.getBuilder()
 
         tp.parseTopoFile(self, builder)
@@ -37,7 +40,7 @@ class Simulator(object):
         traf_file = 'input_files/traff_poisson_{}.txt'.format(self._rate_str)
         if not os.path.exists(traf_file):
             raise IOError("traf_file doesn't exist: {}".format(traf_file))
-        tf = TrafficGenerator(traf_file)
+        tf = TrafficGenerator(traf_file, self._config)
         tf.parseTrafficFile(self._node_dic, self)
 
     def enqueue(self, event):
@@ -88,11 +91,10 @@ class Simulator(object):
         self._logger.write()
 
 if __name__ == '__main__':
-    if len(sys.argv) != 3: 
-        print 'usage: main.py cong_str rate_str '
-        sys.exit(-1)
-    
-    sim = Simulator(sys.argv[1], sys.argv[2])
+    json_path = 'setting/base.json'
+    config = Config(json_path, sys.argv)
+
+    sim = Simulator(config)
     sim.loadInput()
     sim.run()
     sim.logToFile()

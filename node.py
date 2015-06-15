@@ -33,8 +33,8 @@ class Node(object):
         self.buf_man[buf_man.id()] = buf_man
         #self.buf_man.attachNode(self)
 
-    def attachQueueMan(self, queue_man):
-        self.queue_man = queue_man
+    #def attachQueueMan(self, queue_man):
+    #    self.queue_man = queue_man
 
     def attachStorageMan(self, storage_man):
         self.storage_man = storage_man
@@ -47,7 +47,8 @@ class Node(object):
 
     def getBufManByNextHop(self, next_hop_id):
         if next_hop_id not in self.buf_man:
-            raise KeyError('Node:getBufMan: next hop not found')
+            raise KeyError('Node:getBufMan: node id: {0}, next hop {1} not found'
+                            .format(self._id, next_hop_id))
         return self.buf_man[next_hop_id]
 
     def getBufManById(self, buf_man_id):
@@ -251,10 +252,10 @@ class LinkBufferPerIf(LinkBuffer):
 
         # because per-if buf_man has single buffer, whose id is the same as buf_man_id
         buf_man_id = self.id()
-        self._buf_man = self._node.getBufManById(buf_man_id)
+        self._buf_man = self.cur_node.getBufManById(buf_man_id)
 
     def enqueue(self, chunk):
         ''' has ECN capability '''
         super(LinkBufferPerIf, self).enqueue(chunk)
-        self._buf_man.doECN(chunk)
+        #self._buf_man.doECN(chunk)
          

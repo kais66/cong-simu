@@ -4,6 +4,7 @@
 # It manages buffers for that interface.
 ###############################################################################
 from node import *
+from queue_manager import *
 
 class BaseBufferManager(object):
     MB_1 = 1048576
@@ -14,7 +15,7 @@ class BaseBufferManager(object):
         self._simulator = simu
         
         self._cur_byte = 0
-        self._MAX_BYTE = MB_1 * 10
+        self._MAX_BYTE = BaseBufferManager.MB_1 * 10
 
     def id(self):
         return self._id
@@ -81,21 +82,12 @@ class AppBufferManagerWithECN(AppBufferManager):
         super(AppBufferManagerWithECN, self).__init__(simu, id)
         self._dst_to_delay = {}
 
-    def enqueue(self, chunk):
-        ''' First execute the same logic as AppBufferManager.enqueue; but keep a reference of the location of 
-            inserted event in priority queue. '''
-        dst_id = chunk.dst() 
-        if dst_id not in self._buffers:
-            self.addBuffer(dst_id)
-        
-
-        #self.
-
-    def addDelqy(self, dst_id, delayToAdd):
+    def addDelay(self, dst_id, delayToAdd):
         if dst_id not in self._dst_to_delay:
             self._dst_to_delay[dst_id] = delayToAdd
         else:
-            self._dst_to_delay += delayToAdd
+            self._dst_to_delay[dst_id] += delayToAdd
+        print 'AppBufferManagerWithECN.addDelay: curr delay: {}'.format(self._dst_to_delay[dst_id])
 
     def getDstDelay(self, dst_id):
         if dst_id not in self._dst_to_delay:
@@ -300,6 +292,9 @@ class LinkBufferManagerPerIf(LinkBufferManager):
         # bookkeeping related to capacity
         self._cur_byte += chunk.size()
 
+        if self._queue_man:
+            self.doECN(chunk)
+
     def schedBuffer(self):
         return self._id if self.canDequeue(self._id) else -1
 
@@ -334,3 +329,4 @@ class LinkBufferManagerPerIf(LinkBufferManager):
     def doECN(self, chunk):
         print 'LinkBufferManagerPerIf: doECN'
         delay = self._queue_man.decideFlowDelay(chunk)
+        self._queue_man.applyFlowDelay(chunk.src(), chunk.dst(), delay)

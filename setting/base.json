@@ -1,0 +1,8 @@
+{
+    "global" : {
+        "experiment_type" : "PerIf",
+        "rate_str" : "2000",
+        "use_ECN" : true
+    },
+    "node_specific" : []
+}

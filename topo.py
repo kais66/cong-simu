@@ -1,18 +1,20 @@
 from node import *
+from buffer_manager import *
 from chunk import *
 import sys
 import Queue
 
 class BuilderFactory(object):
-    def __init__(self, builder_str):
-        self._name = builder_str
+    def __init__(self, config):
+        self.config = config
 
     def getBuilder(self):
         ret = None
-        if self._name == 'PerFlow':
-            ret = BufManBuilderPerFlow()
-        elif self._name == 'PerIf':
-            ret = BufManBuilderPerIf()
+        exp_type = self.config.exp_type
+        if exp_type == 'PerFlow':
+            ret = BufManBuilderPerFlow(self.config)
+        elif exp_type == 'PerIf':
+            ret = BufManBuilderPerIf(self.config)
         else:
             raise AttributeError('wrong string')
         return ret
@@ -21,8 +23,8 @@ class BaseBufManBuilder(object):
     #band = 131072.0 # unit: byte per ms, == 1Gbps
     band = 6750.0 # byte per ms, == 54 Mbps
     lat = 5.0 # ms
-    def __init__(self):
-        pass
+    def __init__(self, config):
+        self.config = config
 
     def buildBufMan(self, simu, node, if_id): # interface id, because each interface has a buf man
         pass
@@ -68,13 +70,20 @@ class BufManBuilderPerIf(BaseBufManBuilder):
     def buildBufMan(self, simu, node, if_id):
         buf_man = LinkBufferManagerPerIf(simu, if_id, BaseBufManBuilder.band, BaseBufManBuilder.lat)
         buf_man.attachNode(node)
-        buf_man.addBuffer(buf_man.id())
-        assert node is not None
 
+        assert node is not None
         self.buf_man = buf_man
         node.attachBufMan(buf_man)
-
         node.addWeight(BaseBufManBuilder.lat) # by default, use latency as link weight
+
+        # here, addBuffer() has to come after buf_man is attached to the node
+        buf_man.addBuffer(buf_man.id())
+
+        # if ECN,
+        if self.config.use_ECN:
+            queue_man = BaseQueueManager(buf_man, simu)
+            buf_man.attachQueueMan(queue_man)
+
         evt = TxStartEvt(simu, 0.0, buf_man)
         simu.enqueue(evt)
 
@@ -99,9 +108,10 @@ class TrafficGenerator(object):
     ''' 
         Load the traffic profile from input file, generate corresponding events and insert them into sender's buffers.
     '''
-    def __init__(self, traff_file):
+    def __init__(self, traff_file, config):
         self.src, self.dst = {}, {} # node_id : Node
         self.traff_file = traff_file
+        self.config = config
 
     def parseTrafficFile(self, node_dic, simu):
         try:
@@ -127,7 +137,13 @@ class TrafficGenerator(object):
                 node = node_dic[src_id]
                 if not node.src:
                     src = TrafficSrc(node, None)
-                    buf_man = AppBufferManager(simu, 0)
+
+                    # if ECN
+                    buf_man = None
+                    if self.config.use_ECN:
+                        buf_man = AppBufferManagerWithECN(simu, 0)
+                    else:
+                        buf_man = AppBufferManager(simu, 0)
                     buf_man.attachNode(node)
                     src.attachBufMan(buf_man)
                     node.attachSrc(src)
