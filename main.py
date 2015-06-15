@@ -20,7 +20,12 @@ class Simulator(object):
 
         self._cong_str = config.exp_type
         self._rate_str = config.rate_str 
-        self._logger = OutputLogger('output/respTimes_{}_{}.csv'.format(self._cong_str, self._rate_str))
+        self._logger = None
+        if self._config.use_ECN:
+            self._logger = OutputLogger('output/respTimes_{}WithECN_{}.csv'.format(self._cong_str, self._rate_str))
+        else:
+            self._logger = OutputLogger('output/respTimes_{}_{}.csv'.format(self._cong_str, self._rate_str))
+
         #self.__dict___ = Simulator.shared_state
         #self.queue = Queue.PriorityQueue()
 
