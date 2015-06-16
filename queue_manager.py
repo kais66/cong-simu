@@ -19,6 +19,9 @@ class BaseQueueManager(object):
             This basic version applies a exponential delay, multiplied by occupancy.
         '''
         occupancy_percent = self._buf_man.occupancyPercent()
+        print 'BaseQueueManager.decideFlowDelay(): occupancy_percent: {}'.format(occupancy_percent)
+        if occupancy_percent <= 0.2:
+            return 0.0
 
         mean = BaseQueueManager.EXP_BACKOFF_MEAN        
         delay = random.expovariate(1.0 / mean)

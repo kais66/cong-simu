@@ -82,6 +82,20 @@ class AppBufferManagerWithECN(AppBufferManager):
         super(AppBufferManagerWithECN, self).__init__(simu, id)
         self._dst_to_delay = {}
 
+    def enqueue(self, chunk):
+        dst_id = chunk.dst() 
+        if dst_id not in self._buffers:
+            self.addBuffer(dst_id)
+
+        evt = DownStackWithECNEvt(self._simulator, chunk.startTimestamp(), self._node, dst_id)
+        self._simulator.enqueue(evt)
+
+        self._buffers[dst_id].enqueue(chunk)
+
+    def peek(self, dst_id):
+        ''' peek at the buffer with dst_id as id '''
+        return self._buffers[dst_id].peek()
+
     def addDelay(self, dst_id, delayToAdd):
         if dst_id not in self._dst_to_delay:
             self._dst_to_delay[dst_id] = delayToAdd

@@ -41,13 +41,8 @@ class DownStackEvt(Event):
     #def printEvt(self):
         print '=== end executing DownStackEvt\n'
 
-class DownStackWithECNEvt(Event):
+class DownStackWithECNEvt(DownStackEvt):
     ''' with this event, before calling downstack, we check if it is indeed time to push down the chunk. '''
-    def __init__(self, simu, timestamp, node, dst_id):
-        super(DownStackEvt, self).__init__(simu, timestamp)
-        self._node = node
-        self._dst_id = dst_id
-
     def execute(self):
         print '\n=== begin DownStackWithECNEvt: executing, time: %f' % (self._timestamp)
 
@@ -59,14 +54,15 @@ class DownStackWithECNEvt(Event):
         # query the appBufMan to see if the chunk should be delayed due to previous
         # congestion notification
         appBufMan = self._node.src.app_buf_man
+        chunk = appBufMan.peek(self._dst_id)
+        if chunk:
+            chunk.show()
+        else:
+            print 'DownStackWithECNEvt: no chunk to be pushed down'
         intendedDelay = appBufMan.getDstDelay(self._dst_id)
         if chunk.startTimestamp() + intendedDelay <= self._timestamp:
             print 'DownStackWithECNEvt: do downStack'
             chunk = self._node.src.downOneChunk(self._dst_id)
-            if chunk:
-                chunk.show()
-            else:
-                print 'DownStackWithECNEvt: no chunk to be pushed down'
 
             evt = TxStartEvt(self._simu, chunk.startTimestamp(), self._node.getBufManByDst(chunk.dst()))
             self._simu.enqueue(evt)
