@@ -77,6 +77,22 @@ class AppBufferManager(BaseBufferManager):
             chunk = buf.dequeue(-1.0)
         return chunk
 
+class AppBufferManagerTB(BaseBufferManager):
+    def addBuffer(self, buf_id):
+        init_rate = 10000 # this has to be passed in from config somehow.
+
+        self._buffers[buf_id] = AppBufferTB(self._node, buf_id, init_rate,
+                                            self._simulator)
+    def enqueue(self, chunk):
+        dst_id = chunk.dst()
+        if dst_id not in self._buffers:
+            self.addBuffer(dst_id)
+
+        # with TB, downStack evt is enqueued only for buffer is initialized
+        # i.e. not for every enqueued chunk.
+        self._buffers[dst_id].enqueue(chunk)
+
+
 class AppBufferManagerWithECN(AppBufferManager):
     def __init__(self, simu, id):
         super(AppBufferManagerWithECN, self).__init__(simu, id)
@@ -108,6 +124,7 @@ class AppBufferManagerWithECN(AppBufferManager):
             return 0.0
         else:
             return self._dst_to_delay[dst_id] 
+
 
 class LinkBufferManager(BaseBufferManager):
     def __init__(self, simu, id, band, lat):
@@ -308,7 +325,8 @@ class LinkBufferManagerPerIf(LinkBufferManager):
 
         node_id = self._node.id()
         if self._queue_man and chunk.dst() != node_id and chunk.src() != node_id:
-            self.doECN(chunk)
+            #self.doECN(chunk)
+            self._queue_man.doECN(chunk)
 
     def schedBuffer(self):
         return self._id if self.canDequeue(self._id) else -1
@@ -341,8 +359,8 @@ class LinkBufferManagerPerIf(LinkBufferManager):
         #        (self._node.id(), self.id(), buf_id)
         return False
 
-    def doECN(self, chunk):
-        print 'LinkBufferManagerPerIf: doECN'
-        delay = self._queue_man.decideFlowDelay(chunk)
-        if delay > 0.0:
-            self._queue_man.applyFlowDelay(chunk.src(), chunk.dst(), delay)
+    # def doECN(self, chunk):
+    #     print 'LinkBufferManagerPerIf: doECN'
+    #     delay = self._queue_man.decideFlowDelay(chunk)
+    #     if delay > 0.0:
+    #         self._queue_man.applyFlowDelay(chunk.src(), chunk.dst(), delay)

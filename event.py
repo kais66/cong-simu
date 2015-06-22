@@ -41,6 +41,35 @@ class DownStackEvt(Event):
     #def printEvt(self):
         print '=== end executing DownStackEvt\n'
 
+class DownStackTBEvt(DownStackEvt):
+    '''
+        with this event, app buffer uses Token Bucket algorithm to manage its
+        sending rate.
+    '''
+    def execute(self):
+        print '\n=== begin DownStackTBEvt: executing, time: %f' % (self._timestamp)
+        appBuf = self._node.src.app_buf_man.getBufById(self._dst_id)
+
+        # try schedule the head-of-queue chunk
+        if not appBuf.sufficientToken():
+            return
+
+        print 'DownStackTBEvt: do downStack'
+
+        # because there're enough tokens, now first push a chunk down, then
+        # schedule another DownStack evt.
+        chunk = self._node.src.downOneChunk(self._dst_id)
+        evt = TxStartEvt(self._simu, self._simu.time(), self._node.getBufManByDst(chunk.dst()))
+        self._simu.enqueue(evt)
+
+        evt = DownStackTBEvt(self.simu, self._simu.time() +
+                             appBuf.estimateTimeTillNextDeq(), self._node, self._dst_id)
+        self._simu.enqueue(evt)
+        print '=== end executing DownStackTBEvt\n'
+
+
+
+
 class DownStackWithECNEvt(DownStackEvt):
     ''' with this event, before calling downstack, we check if it is indeed time to push down the chunk. '''
     def execute(self):

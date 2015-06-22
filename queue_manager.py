@@ -13,6 +13,11 @@ class BaseQueueManager(object):
         self._buf_man = buf_man 
         self._simu = simu
 
+    def doECN(self, chunk):
+        delay = self.decideFlowDelay(chunk)
+        if delay > 0.0:
+            self.applyFlowDelay(chunk.src(), chunk.dst(), delay)
+
     def decideFlowDelay(self, chunk):
         ''' 
             Based on the current occupancy, determine how long the flow src should backoff. 
@@ -60,3 +65,17 @@ class CongSrcQueueManager(BaseQueueManager):
             .format(occupancy_percent, delay)
         return delay
         
+class QueueManagerTB(BaseQueueManager):
+    def doECN(self, chunk):
+        pass
+
+    def decideNewRate(self, chunk):
+        '''
+        determine if a rate change is required. If not, return old rate.
+        :param chunk: a Chunk object
+        :return: return a float
+        '''
+
+    def applyRate(self, src_id, dst_id, new_rate):
+        pass
+
