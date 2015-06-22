@@ -19,8 +19,8 @@ class Demand(object):
         demand = []
         random.seed()
         for s in src:
-            #demand.extend(self.genOneSrcPoisson(length, s, dst, size))
-            demand.extend(self.genOneSrcPoissonSkewed(length, s, dst, size))
+            demand.extend(self.genOneSrcPoisson(length, s, dst, size))
+            #demand.extend(self.genOneSrcPoissonSkewed(length, s, dst, size))
         demand.sort(key=lambda x: x[3])
         chk_id = 1
         for l in demand:

@@ -9,8 +9,10 @@ class OutputLogger(object):
         f.close()
 
     def log(self, chunk):
-        self._content.append("{}, {}, {}, {}\n".format(chunk.id(), chunk.startTimestamp(), \
-                chunk.timestamp(), chunk.timestamp()-chunk.startTimestamp()))
+        line = "{}, {}, {}, {}, {}, {}\n".format(chunk.id(), chunk.startTimestamp(), \
+                chunk.timestamp(), chunk.timestamp()-chunk.startTimestamp(),
+                chunk.src(), chunk.dst())
+        self._content.append(line)
         
     def write(self):
         with open(self._file, 'a') as f:

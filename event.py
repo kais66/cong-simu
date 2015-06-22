@@ -55,22 +55,41 @@ class DownStackWithECNEvt(DownStackEvt):
         # congestion notification
         appBufMan = self._node.src.app_buf_man
         chunk = appBufMan.peek(self._dst_id)
+
         if chunk:
             chunk.show()
         else:
-            print 'DownStackWithECNEvt: no chunk to be pushed down'
+            print 'DownStackWithECNEvt: no chunk to be pushed down, exiting'
+            return
+
+        # get the linkBufMan for this chunk
+        linkBufMan = self._node.getBufManByDst(self._dst_id)
+
+        evt = None
         intendedDelay = appBufMan.getDstDelay(self._dst_id)
-        if chunk.startTimestamp() + intendedDelay <= self._timestamp:
+
+        # if buf_man is currently Tx-ing
+        if linkBufMan._tx_until > self._timestamp:
+            evt = DownStackWithECNEvt(self._simu, linkBufMan._tx_until, self._node, self._dst_id) 
+            print 'DownStackWithECNEvt: buf_man currently Tx-ing till {}, \
+                nee to reschedule.'.format(linkBufMan._tx_until)
+        # elif src has to backoff
+        elif chunk.experiencedECNDelay() < intendedDelay: 
+            print 'DownStackWithECNEvt: not the time yet, need to reschedule to do downStack'
+            # should try DownStack later
+            evt = DownStackWithECNEvt(self._simu, self._timestamp +  \
+                    (intendedDelay-chunk.experiencedECNDelay()), \
+                    self._node, self._dst_id) 
+            chunk.setExperiencedECNDelay(intendedDelay)
+
+        # safe to push down
+        else:
             print 'DownStackWithECNEvt: do downStack'
             chunk = self._node.src.downOneChunk(self._dst_id)
 
             evt = TxStartEvt(self._simu, chunk.startTimestamp(), self._node.getBufManByDst(chunk.dst()))
-            self._simu.enqueue(evt)
-        else:
-            print 'DownStackWithECNEvt: not the time yet, need to reschedule to do downStack'
-            # should try DownStack later
-            evt = DownStackWithECNEvt(self._simu, chunk.startTimestamp() + intendedDelay, self._node, self._dst_id) 
-            self._simu.enqueue(evt)
+
+        self._simu.enqueue(evt)
 
         print '=== end executing DownStackEvt\n'
 

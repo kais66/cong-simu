@@ -114,26 +114,45 @@ class CongControllerPerIf(BaseCongController):
     def __init__(self, simu):
         super(CongControllerPerIf, self).__init__(simu)
         self._block_out_till = {} # cong_ctrl_subject : future_time
+        self._num_block_out = 0 # number of subject I need to block traffic out to
+
+    def __setBlockOutTime(self, sub, future_time):
+        cur_time = self._simu.time()
+        prev_blocked = self.isBlockedOut(sub, cur_time)
+
+        self._block_out_till[sub] = future_time
+        cur_blocked = self.isBlockedOut(sub, cur_time) 
+        if not prev_blocked and cur_blocked:
+            self._num_block_out += 1
+        elif prev_blocked and not cur_blocked:
+            self._num_block_out -= 1
+            assert self._num_block_out >= 0
+
+    def numBlockOut(self):
+        return self._num_block_out
 
     def updateBlockInState(self, future_time=None):
         if not self._block_in and self._buf.numBytes() >= self._buf.capacity():
             self._block_in = True
-            print 'BlockInState: --> blocked, node: %d, buf: %d' % \
-                (self._buf.node().id(), self._buf.id())
+            print 'BlockInState: --> blocked, node: %d, buf: %d, cur_bytes: %d' % \
+                (self._buf.node().id(), self._buf.id(), self._buf.numBytes())
             self.notifyCong(self, 0)
             return True
 
         if self._block_in and self._buf.numBytes() < self._buf.capacity():
             assert future_time is not None
             self._block_in = False
-            print 'BlockInState: --> unblocked'
+            #print 'BlockInState: --> unblocked'
+            print 'BlockInState: --> unblocked, node: %d, buf: %d, cur_bytes: %d' % \
+                (self._buf.node().id(), self._buf.id(), self._buf.numBytes())
             self.notifyCong(self, future_time)
             return True
         return False
 
     def notifyNoCong(self, sub):
         for ob in self._obs:
-            ob._block_out_till[sub] = -1.0
+            #ob._block_out_till[sub] = -1.0
+            ob.__setBlockOutTime(sub, -1.0)
 
             evt = TxStartEvt(ob._simu, ob._simu.time(), ob.bufMan()) 
             self._simu.enqueue(evt)
@@ -142,7 +161,8 @@ class CongControllerPerIf(BaseCongController):
         for ob in self._obs:
             #if sub._buf.id() == ob._buf.node().id(): # e.g. node 1's buf 3 blocked in, don't notify node 3's buf 1
             #    continue
-            ob._block_out_till[sub] = future_time
+            #ob._block_out_till[sub] = future_time
+            ob.__setBlockOutTime(sub, future_time)
             print 'notifyCong: future_time: %f, block_out: node: %d, buf: %d, block_in: node: %d, buf: %d' % \
                 (future_time, ob._buf.node().id(), ob._buf.id(), sub._buf.node().id(), sub._buf.id())
             #print ob
@@ -161,7 +181,9 @@ class CongControllerPerIf(BaseCongController):
         #print 'isBlockedOut'
         #print sub
         if sub not in self._block_out_till: # meaning sub is not a subject for this observer
-            print '!!! congestion subject not found '
+            print 'isBlockedOut: !!! congestion subject not found '
+            print 'isBlockedOut: ob: node_id: %d, buf_id: %d; sub: node_id %d, buf_id: %d' % \
+                (self._buf.node().id(), self._buf.id(), sub._buf.node().id(), sub._buf.id())
             ret = False
         else:
             future_time = self._block_out_till[sub]

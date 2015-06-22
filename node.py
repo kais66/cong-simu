@@ -121,6 +121,9 @@ class TrafficSrc(object):
             self._node.receive(chunk)
 
         return chunk
+
+    def canDownOneChunk(self, dst_id):
+        pass
             
 
 class TrafficSink:

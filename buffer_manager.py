@@ -306,7 +306,8 @@ class LinkBufferManagerPerIf(LinkBufferManager):
         # bookkeeping related to capacity
         self._cur_byte += chunk.size()
 
-        if self._queue_man:
+        node_id = self._node.id()
+        if self._queue_man and chunk.dst() != node_id and chunk.src() != node_id:
             self.doECN(chunk)
 
     def schedBuffer(self):
@@ -343,4 +344,5 @@ class LinkBufferManagerPerIf(LinkBufferManager):
     def doECN(self, chunk):
         print 'LinkBufferManagerPerIf: doECN'
         delay = self._queue_man.decideFlowDelay(chunk)
-        self._queue_man.applyFlowDelay(chunk.src(), chunk.dst(), delay)
+        if delay > 0.0:
+            self._queue_man.applyFlowDelay(chunk.src(), chunk.dst(), delay)

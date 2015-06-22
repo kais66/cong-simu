@@ -81,7 +81,8 @@ class BufManBuilderPerIf(BaseBufManBuilder):
 
         # if ECN,
         if self.config.use_ECN:
-            queue_man = BaseQueueManager(buf_man, simu)
+            #queue_man = BaseQueueManager(buf_man, simu)
+            queue_man = CongSrcQueueManager(buf_man, simu)
             buf_man.attachQueueMan(queue_man)
 
         evt = TxStartEvt(simu, 0.0, buf_man)
@@ -109,7 +110,7 @@ class TrafficGenerator(object):
         Load the traffic profile from input file, generate corresponding events and insert them into sender's buffers.
     '''
     def __init__(self, traff_file, config):
-        self.src, self.dst = {}, {} # node_id : Node
+        self.src, self.dst = set(), {} # node_id : Node
         self.traff_file = traff_file
         self.config = config
 
@@ -136,6 +137,7 @@ class TrafficGenerator(object):
                 chk = Chunk(int(words[0]), int(words[1]), int(words[2]), float(words[3]), int(words[4]))
                 node = node_dic[src_id]
                 if not node.src:
+
                     src = TrafficSrc(node, None)
 
                     # if ECN
@@ -169,12 +171,6 @@ class TopoGenerator(object):
         self.is_ECN = False
         self.is_storage = False
 
-    def __initECNAndStorage(self, cur_node):
-        if self.is_ECN:
-            cur_node.attachQueueMan(BaseQueueManager(cur_node))
-        if self.is_storage:
-            cur_node.attachStorageMan(StorageManager(cur_node))
-         
     def parseTopoFile(self, simu, buf_man_builder):
         try:
             f = open(self.topo_file, 'r')
@@ -192,7 +188,6 @@ class TopoGenerator(object):
                 if node_id not in self.node_dic:
                     self.node_dic[node_id] = Node(node_id, None)
 
-                    #self.__initECNAndStorage(self.node_dic[node_id]) 
 
                     #buf_man = BaseBufferManager(simu)
                     #buf_man.attachNode(node)
@@ -211,7 +206,6 @@ class TopoGenerator(object):
                     nbr = None
                     if nbr_id not in self.node_dic:
                         self.node_dic[nbr_id] = Node(nbr_id, None)
-                        #self.__initECNAndStorage(self.node_dic[nbr_id]) 
                         #nbr = Node(nbr_id, None)
                         #buf_man = BaseBufferManager(simu)
                         #buf_man.attachNode(nbr)

@@ -15,6 +15,11 @@ class Simulator(object):
         #self._queue = PrioQueue()
         self._node_dic = {}
         self._sim_time = 0.0
+
+        # debug running time
+        #self._length = 50000.0
+
+        # regular running time
         self._length = 200000.0
         self._config = config
 
@@ -47,6 +52,7 @@ class Simulator(object):
             raise IOError("traf_file doesn't exist: {}".format(traf_file))
         tf = TrafficGenerator(traf_file, self._config)
         tf.parseTrafficFile(self._node_dic, self)
+
 
     def enqueue(self, event):
         #print 'simu:enqueue, evt with timestamp: %f' % (event.timestamp(),)
