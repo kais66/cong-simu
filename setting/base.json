@@ -2,7 +2,10 @@
     "global" : {
         "experiment_type" : "PerIf",
         "rate_str" : "2000",
-        "use_ECN" : true
+        "use_ECN" : true,
+        "app_buf_man" : {
+            "init_rate" : 10000
+        }
     },
     "node_specific" : []
 }

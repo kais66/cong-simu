@@ -230,6 +230,7 @@ class AppBufferTB(BaseBuffer):
         # timestamp (in ms) of last event of dequeue a chunk from appBuf
         self.last_time = 0.0
         self.simu = simu
+        self.config = self.simu._config
 
         # rate increase granularity: increase rate every rate_inc_gran chks
         self.RATE_INC_GRAN = 1
