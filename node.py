@@ -167,7 +167,7 @@ class BaseBuffer(object): # buffer could be for a single interface, or for a sin
         #self.curNode(cur_node)
         #print 'BaseBuffer:enqueue the chunk'
 
-    def dequeue(self, dq_time): 
+    def dequeue(self, dq_time=-1.0):
         chunk = self.queue.popleft()
         self.decreCurBytes(chunk.size())
         return chunk
@@ -215,9 +215,6 @@ class AppBuffer(BaseBuffer):
         self.increCurBytes(chunk.size())
         #self.curNode(cur_node)
         #print 'AppBuffer:enqueue the chunk'
-    
-    def dequeue(self, dq_time):
-        return self.queue.popleft()
 
 
 class AppBufferTB(BaseBuffer):
@@ -229,14 +226,30 @@ class AppBufferTB(BaseBuffer):
 
         self.rate = rate # unit: byte per millisecond
         self.last_token = 0
-        self.last_time = init_time # timestamp (in ms) of last event of
-                                    # dequeue a chunk from appBuf
 
+        # timestamp (in ms) of last event of dequeue a chunk from appBuf
+        self.last_time = 0.0
         self.simu = simu
+
+        # rate increase granularity: increase rate every rate_inc_gran chks
+        self.RATE_INC_GRAN = 1
+        # incremented by 1 for every chk sent; reset to 0 if multiple of rate_inc_gran
+        self.sent_count = 0
+
 
         init_time = 0.0 + float(chunk.size()) / self.rate
         evt = DownStackTBEvt(self.simu, init_time, self.node, self.id())
         self.simu.enqueue(evt)
+
+    def dequeue(self, dq_time=-1.0):
+        chunk = super(AppBufferTB, self).dequeue()
+        self.sent_count += 1
+        self.last_time = self.simu.time()
+        if self.sent_count % self.RATE_INC_GRAN:
+            self.sent_count = 0
+            self.setRate(self.rate * (1.0 + 1.0/8))
+        return chunk
+
 
     def setRate(self, new_rate):
         self.rate = new_rate

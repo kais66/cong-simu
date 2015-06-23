@@ -18,6 +18,19 @@ class BaseQueueManager(object):
         if delay > 0.0:
             self.applyFlowDelay(chunk.src(), chunk.dst(), delay)
 
+    def isCongestionOrigin(self):
+        cong_ctrl = self._buf_man._buffer.congCtrl()
+
+        # if cur node is blocked out, this is not a source of congestion
+        if cong_ctrl.numBlockOut() > 0:
+            return False
+
+        occupancy_percent = self._buf_man.occupancyPercent()
+        if occupancy_percent <= 0.5:
+            return False
+
+        return True
+
     def decideFlowDelay(self, chunk):
         ''' 
             Based on the current occupancy, determine how long the flow src should backoff. 
@@ -67,15 +80,27 @@ class CongSrcQueueManager(BaseQueueManager):
         
 class QueueManagerTB(BaseQueueManager):
     def doECN(self, chunk):
-        pass
-
-    def decideNewRate(self, chunk):
         '''
-        determine if a rate change is required. If not, return old rate.
+        based on queue occupancy, adjust (or maintain) the src's rate.
+        :param chunk:
+        :return:
+        '''
+        self.__adjustSrcRate(chunk)
+
+
+
+    def __adjustSrcRate(self, chunk):
+        '''
+        assuming need to do ECN, determine and apply the new rate for traffic src
         :param chunk: a Chunk object
         :return: return a float
         '''
+        src_id = chunk.src()
+        dst_id = chunk.dst()
 
-    def applyRate(self, src_id, dst_id, new_rate):
-        pass
+        srcNode = self._simu.getNodeById(src_id)
+        srcBuf = srcNode.src.app_buf_man.getBufById(dst_id)
+
+        srcBuf.setRate(float(srcBuf.rate) / 2)
+
 

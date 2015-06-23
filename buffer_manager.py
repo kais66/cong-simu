@@ -326,7 +326,8 @@ class LinkBufferManagerPerIf(LinkBufferManager):
         node_id = self._node.id()
         if self._queue_man and chunk.dst() != node_id and chunk.src() != node_id:
             #self.doECN(chunk)
-            self._queue_man.doECN(chunk)
+            if self._queue_man.isCongestionOrigin():
+                self._queue_man.doECN(chunk)
 
     def schedBuffer(self):
         return self._id if self.canDequeue(self._id) else -1

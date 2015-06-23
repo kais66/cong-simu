@@ -82,7 +82,7 @@ class BufManBuilderPerIf(BaseBufManBuilder):
         # if ECN,
         if self.config.use_ECN:
             #queue_man = BaseQueueManager(buf_man, simu)
-            queue_man = CongSrcQueueManager(buf_man, simu)
+            queue_man = QueueManagerTB(buf_man, simu)
             buf_man.attachQueueMan(queue_man)
 
         evt = TxStartEvt(simu, 0.0, buf_man)
@@ -143,7 +143,8 @@ class TrafficGenerator(object):
                     # if ECN
                     buf_man = None
                     if self.config.use_ECN:
-                        buf_man = AppBufferManagerWithECN(simu, 0)
+                        # buf_man = AppBufferManagerWithECN(simu, 0)
+                        buf_man = AppBufferManagerTB(simu, 0)
                     else:
                         buf_man = AppBufferManager(simu, 0)
                     buf_man.attachNode(node)
