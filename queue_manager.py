@@ -28,7 +28,7 @@ class BaseQueueManager(object):
 
         occupancy_percent = self._buf_man.occupancyPercent()
         print 'queueMan.needECN: occupancy percentage: {}'.format(occupancy_percent)
-        if occupancy_percent <= BaseBufferManager.SET_POINT_RATIO:
+        if occupancy_percent <= BaseQueueManager.SET_POINT_RATIO:
             return False
 
         return True
@@ -68,7 +68,7 @@ class CongSrcQueueManager(BaseQueueManager):
             return 0.0
 
         occupancy_percent = self._buf_man.occupancyPercent()
-        if occupancy_percent <= 0.5:
+        if occupancy_percent <= BaseQueueManager.SET_POINT_RATIO:
             return 0.0
 
         # use a quadratic function to do backoff
@@ -104,7 +104,12 @@ class QueueManagerTB(BaseQueueManager):
         srcNode = self._simu.getNodeById(src_id)
         srcBuf = srcNode.src.app_buf_man.getBufById(dst_id)
 
-        new_rate = float(srcBuf.rate) / 2
+        occupancy_percent = self._buf_man.occupancyPercent()
+        gain = ((occupancy_percent - BaseQueueManager.SET_POINT_RATIO) * 10) ** 2
+        reduction = float(srcBuf.rate) / 100 * gain
+
+        new_rate = srcBuf.rate - reduction
+
         srcBuf.setRate(new_rate)
 
 
