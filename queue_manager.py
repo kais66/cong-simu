@@ -96,12 +96,14 @@ class QueueManagerTB(BaseQueueManager):
         :param chunk: a Chunk object
         :return: return a float
         '''
+        print 'queueMan: adjustSrcRate:'
         src_id = chunk.src()
         dst_id = chunk.dst()
 
         srcNode = self._simu.getNodeById(src_id)
         srcBuf = srcNode.src.app_buf_man.getBufById(dst_id)
 
-        srcBuf.setRate(float(srcBuf.rate) / 2)
+        new_rate = float(srcBuf.rate) / 2
+        srcBuf.setRate(new_rate)
 
 

@@ -47,12 +47,22 @@ class DownStackTBEvt(DownStackEvt):
         sending rate.
     '''
     def execute(self):
-        print '\n=== begin DownStackTBEvt: executing, time: %f' % (self._timestamp)
+        print '\n=== begin DownStackTBEvt: executing, time: {}, node: {}, dst_id: {}'.\
+              format(self._timestamp, self._node.id(), self._dst_id)
         appBuf = self._node.src.app_buf_man.getBufById(self._dst_id)
 
         # try schedule the head-of-queue chunk
         if not appBuf.sufficientToken():
             print '=== end executing DownStackTBEvt: no sufficient token \n'
+            return
+
+        # buf is guaranteed to be not empty
+        chunk = appBuf.peek()
+
+        # if chunk arrives after cur time
+        if chunk.startTimestamp() > self.timestamp():
+            print '=== end executing DownStackTBEvt: not yet chk start time: {}\n'. \
+                format(chunk.startTimestamp())
             return
 
         print 'DownStackTBEvt: do downStack'
@@ -65,7 +75,7 @@ class DownStackTBEvt(DownStackEvt):
             return
 
 
-        #chunk.setTimestamp(self._simu.time())
+        chunk.updateTimestamp(self.timestamp())
         chunk.show()
 
 
@@ -246,6 +256,7 @@ class RxEndEvt(Event):
     def execute(self):
         print '\n=== begin RxEndEvt'
         self._chunk.updateTimestamp(self._timestamp)
+        self._chunk.updateCurNode(self._node.id())
         self._chunk.setStatus(Chunk.BEFORE_TX)
         print '=== RxEvt: executing, time: %f, node id: %d, chunk: ' % (self._timestamp, self._node.id())
         self._chunk.show()

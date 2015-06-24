@@ -28,7 +28,10 @@ class Chunk:
         return self._dst_id
 
     def curNode(self, node_id):
-        self.cur_id = node_id
+        return self._cur_id
+
+    def updateCurNode(self, node_id):
+        self._cur_id = node_id
 
     def setStatus(self, s):
         self._state = s

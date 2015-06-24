@@ -134,8 +134,8 @@ class TrafficSink:
         self._logger = logger
 
     def finish(self, chunk):
-        print '*** TrafficSink:finish, node %d' % (self._node.id())
-        chunk.show()
+        #print '*** TrafficSink:finish, node %d' % (self._node.id())
+        #chunk.show()
         self._logger.log(chunk)
 
     def logToFile(self):
@@ -221,11 +221,11 @@ class AppBufferTB(BaseBuffer):
     '''
         Implements the token bucket algorithm for rate control of the buffer.
     '''
-    INITIAL_RATE = 10000.0
+    INITIAL_RATE = 2000.0
     # rate increase granularity: increase rate every rate_inc_gran chks
     RATE_INC_GRAN = 1
-    # rate increase factor: 1.1 meaning 1.1 * prev_rate
-    RATE_INC_FACTOR = 1.1
+    # rate increase factor: 0.2 meaning new_rate=prev_rate + INIT_rate*0.2
+    RATE_INC_FACTOR = 0.2
 
     def __init__(self, node, buf_id, simu):
         super(AppBufferTB, self).__init__(node, buf_id)
@@ -245,10 +245,12 @@ class AppBufferTB(BaseBuffer):
         self.sent_count = 0
 
     def dequeue(self, dq_time=-1.0):
+        assert self.sufficientToken()
         chunk = super(AppBufferTB, self).dequeue()
 
         time_passed = self.simu.time() - self.last_time
-        assert self.last_token + time_passed * self.rate >= chunk.size()
+        #assert self.last_token + time_passed * self.rate >= chunk.size()
+
 
         self.sent_count += 1
         self.last_time = self.simu.time()
@@ -261,10 +263,32 @@ class AppBufferTB(BaseBuffer):
 
 
     def setRate(self, new_rate):
+        old_rate = self.rate
         self.rate = new_rate
+        print 'AppBuf.setRate: rate changed from {} to {}'.format(old_rate, new_rate)
+
+        # rate reduced
+        if new_rate < old_rate:
+            time_passed = self.simu.time() - self.last_time
+            token_accrued = old_rate * time_passed
+
+            # don't let the accrued token (with old, higher rate) go waste
+            self.last_token += token_accrued
+            self.last_time = self.simu.time()
+
+            # reduction in rate renders previously enqueued downStackEvt invalid
+            # need to re-enqueue one
+            # this has to happen after last two lines (after states updated)
+            if not self.empty():
+                next_sched_time = self.estimateTimeOfNextDeq()
+                evt = DownStackTBEvt(self.simu, next_sched_time, self.node(), self.buf_id)
+                self.simu.enqueue(evt)
+                print 'appBuf.setRate: enq a downStackEvt'
 
     def __additiveIncRate(self):
-        self.setRate(self.rate * AppBufferTB.RATE_INC_FACTOR)
+        new_rate = self.rate + AppBufferTB.INITIAL_RATE * AppBufferTB.RATE_INC_FACTOR
+        print 'appBuf.additiveInc: rate inc from {} to {}'.format(self.rate, new_rate)
+        self.setRate(new_rate)
 
     def sufficientToken(self):
         time_passed = self.simu.time() - self.last_time
@@ -277,8 +301,11 @@ class AppBufferTB(BaseBuffer):
         if total_token - chunk.size() < -1: # total_token is a float
             print 'appBuf.sufficientToken: last token: {}, total_token: {}, chk size: {}'.\
                     format(self.last_token, total_token, chunk.size())
+            print '     time passed: {}, rate: {}'.format(time_passed, self.rate)
             print 'scheduled too early....'
-        return True if total_token >= chunk.size() else False
+            return False
+        else:
+            return True
 
     def estimateTimeOfNextDeq(self):
         '''
