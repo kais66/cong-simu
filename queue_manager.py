@@ -9,7 +9,7 @@ from buffer_manager import *
 
 class BaseQueueManager(object):
     EXP_BACKOFF_MEAN = 10 # in milliseconds
-    SET_POINT_RATIO = 0.5
+    SET_POINT_RATIO = 0.3
     def __init__(self, buf_man, simu):
         self._buf_man = buf_man 
         self._simu = simu
