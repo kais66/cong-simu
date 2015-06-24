@@ -9,7 +9,7 @@ from buffer_manager import *
 
 class BaseQueueManager(object):
     EXP_BACKOFF_MEAN = 10 # in milliseconds
-    SET_POINT_RATIO = 0.3
+    SET_POINT_RATIO = 0.5
     def __init__(self, buf_man, simu):
         self._buf_man = buf_man 
         self._simu = simu
@@ -105,7 +105,7 @@ class QueueManagerTB(BaseQueueManager):
         srcBuf = srcNode.src.app_buf_man.getBufById(dst_id)
 
         occupancy_percent = self._buf_man.occupancyPercent()
-        gain = ((occupancy_percent - BaseQueueManager.SET_POINT_RATIO) * 10) ** 2
+        gain = ((occupancy_percent - BaseQueueManager.SET_POINT_RATIO) * 10) ** 2 
         reduction = float(srcBuf.rate) / 100 * gain
 
         new_rate = srcBuf.rate - reduction
