@@ -50,6 +50,9 @@ class DownStackTBEvt(DownStackEvt):
         print '\n=== begin DownStackTBEvt: executing, time: {}, node: {}, dst_id: {}'.\
               format(self._timestamp, self._node.id(), self._dst_id)
         appBuf = self._node.src.app_buf_man.getBufById(self._dst_id)
+        if appBuf.empty():
+            print '=== end executing DownStackTBEvt: no chunk in queue \n'
+            return
 
         # try schedule the head-of-queue chunk
         if not appBuf.sufficientToken():
