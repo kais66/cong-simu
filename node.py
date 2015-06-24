@@ -273,6 +273,11 @@ class AppBufferTB(BaseBuffer):
             print 'AppBufferTB.sufficientToken(): no chunk available'
             return
         total_token = time_passed * self.rate + self.last_token
+
+        if total_token - chunk.size() < -1: # total_token is a float
+            print 'appBuf.sufficientToken: last token: {}, total_token: {}, chk size: {}'.\
+                    format(self.last_token, total_token, chunk.size())
+            print 'scheduled too early....'
         return True if total_token >= chunk.size() else False
 
     def estimateTimeOfNextDeq(self):
@@ -294,17 +299,16 @@ class AppBufferTB(BaseBuffer):
         size = chunk.size()
 
         # calculate how long does take to accumulate enough tokens
-        time_till_token = float(size - self.last_token) / self.rate
+        time_till_token = max(float(size - self.last_token) / self.rate, 0.0)
 
-        estimate = -1.0
-        # if next chunk is scheduled to arrive at an earlier time
-        if chunk.startTimestamp() <= cur_time + time_till_token:
-            estimate = cur_time + time_till_token
-        else:
-            estimate = chunk.startTimestamp()
+        # if next chunk is scheduled to arrive after the enough-token
+        # time, need to schedule later
+        estimate = max(chunk.startTimestamp(), cur_time + time_till_token)
 
         print 'AppBufferTB.estimate: chk size: {}, rate: {}, estimate: {}'.\
                 format(size, self.rate, estimate)
+        print 'cur_time: {}, time_till_token: {}, chunk start ts: {}'.\
+                format(cur_time, time_till_token, chunk.startTimestamp())
         return estimate
 
 
