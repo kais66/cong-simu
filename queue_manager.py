@@ -18,7 +18,7 @@ class BaseQueueManager(object):
         if delay > 0.0:
             self.applyFlowDelay(chunk.src(), chunk.dst(), delay)
 
-    def isCongestionOrigin(self):
+    def needECN(self):
         cong_ctrl = self._buf_man._buffer.congCtrl()
 
         # if cur node is blocked out, this is not a source of congestion
@@ -26,7 +26,7 @@ class BaseQueueManager(object):
             return False
 
         occupancy_percent = self._buf_man.occupancyPercent()
-        if occupancy_percent <= 0.5:
+        if occupancy_percent <= 1:
             return False
 
         return True

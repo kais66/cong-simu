@@ -52,6 +52,7 @@ class DownStackTBEvt(DownStackEvt):
 
         # try schedule the head-of-queue chunk
         if not appBuf.sufficientToken():
+            print '=== end executing DownStackTBEvt: no sufficient token \n'
             return
 
         print 'DownStackTBEvt: do downStack'
@@ -59,12 +60,24 @@ class DownStackTBEvt(DownStackEvt):
         # because there're enough tokens, now first push a chunk down, then
         # schedule another DownStack evt.
         chunk = self._node.src.downOneChunk(self._dst_id)
+        if not chunk:
+            print 'DownStackTBEvt: no chunk to be pushed down, exiting'
+            return
+
+
+        #chunk.setTimestamp(self._simu.time())
+        chunk.show()
+
+
         evt = TxStartEvt(self._simu, self._simu.time(), self._node.getBufManByDst(chunk.dst()))
         self._simu.enqueue(evt)
 
-        evt = DownStackTBEvt(self.simu, self._simu.time() +
-                             appBuf.estimateTimeTillNextDeq(), self._node, self._dst_id)
-        self._simu.enqueue(evt)
+        if not appBuf.empty():
+            next_sched_time = appBuf.estimateTimeOfNextDeq()
+            evt = DownStackTBEvt(self._simu, next_sched_time, self._node, self._dst_id)
+            self._simu.enqueue(evt)
+            print 'DownStackTBEvt: next sched downStack time: {}'.format(next_sched_time)
+
         print '=== end executing DownStackTBEvt\n'
 
 

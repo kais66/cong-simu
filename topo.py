@@ -38,8 +38,8 @@ class BufManBuilderPerFlow(BaseBufManBuilder):
         buf_man.attachNode(node)
         node.attachBufMan(buf_man)
         node.addWeight(BaseBufManBuilder.lat) # by default, use latency as link weight
-        evt = TxStartEvt(simu, 0.0, buf_man)
-        simu.enqueue(evt)
+        #evt = TxStartEvt(simu, 0.0, buf_man)
+        #simu.enqueue(evt)
 
     def genObservers(self, simu, topo):
         ''' output: dic = {node_id : {flow_id(dst_id) : upstream_id}} '''
@@ -85,8 +85,8 @@ class BufManBuilderPerIf(BaseBufManBuilder):
             queue_man = QueueManagerTB(buf_man, simu)
             buf_man.attachQueueMan(queue_man)
 
-        evt = TxStartEvt(simu, 0.0, buf_man)
-        simu.enqueue(evt)
+        #evt = TxStartEvt(simu, 0.0, buf_man)
+        #simu.enqueue(evt)
 
     def genObservers(self, simu, topo):
         for nd in simu.nodes():

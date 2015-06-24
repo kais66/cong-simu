@@ -40,6 +40,9 @@ class Chunk:
         assert time >= self._cur_ts
         self._cur_ts = time
 
+    def setCurTimestamp(self, time):
+        self._cur_ts = time
+
     def timestamp(self):
         return self._cur_ts
 

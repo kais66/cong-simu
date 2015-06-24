@@ -75,18 +75,30 @@ class AppBufferManager(BaseBufferManager):
         chunk = None
         if not buf.empty():
             chunk = buf.dequeue(-1.0)
+            assert chunk is not None
+        else:
+            print 'AppBufferManager.dequeue(): buffer {} is empty from node: {}, buf_man: {}'.\
+                    format(buf_id, self.id(), self.node().id())
+
         return chunk
 
-class AppBufferManagerTB(BaseBufferManager):
+class AppBufferManagerTB(AppBufferManager):
     def addBuffer(self, buf_id):
-        init_rate = 10000 # this has to be passed in from config somehow.
+        self._buffers[buf_id] = AppBufferTB(self._node, buf_id, self._simulator)
 
-        self._buffers[buf_id] = AppBufferTB(self._node, buf_id, init_rate,
-                                            self._simulator)
     def enqueue(self, chunk):
         dst_id = chunk.dst()
         if dst_id not in self._buffers:
             self.addBuffer(dst_id)
+
+            buf = self._buffers[dst_id]
+            time_enough_token = 0.0 + float(chunk.size()) / buf.rate
+
+            # this logic is the same as appbuf.estimateTimeOfNextDeq()
+            init_time = max(time_enough_token, chunk.startTimestamp())
+
+            evt = DownStackTBEvt(self._simulator, init_time, self._node, dst_id)
+            self._simulator.enqueue(evt)
 
         # with TB, downStack evt is enqueued only for buffer is initialized
         # i.e. not for every enqueued chunk.
@@ -325,8 +337,7 @@ class LinkBufferManagerPerIf(LinkBufferManager):
 
         node_id = self._node.id()
         if self._queue_man and chunk.dst() != node_id and chunk.src() != node_id:
-            #self.doECN(chunk)
-            if self._queue_man.isCongestionOrigin():
+            if self._queue_man.needECN():
                 self._queue_man.doECN(chunk)
 
     def schedBuffer(self):

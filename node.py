@@ -221,61 +221,91 @@ class AppBufferTB(BaseBuffer):
     '''
         Implements the token bucket algorithm for rate control of the buffer.
     '''
-    def __init__(self, node, buf_id, rate, simu):
+    INITIAL_RATE = 10000.0
+    # rate increase granularity: increase rate every rate_inc_gran chks
+    RATE_INC_GRAN = 1
+    # rate increase factor: 1.1 meaning 1.1 * prev_rate
+    RATE_INC_FACTOR = 1.0
+
+    def __init__(self, node, buf_id, simu):
         super(AppBufferTB, self).__init__(node, buf_id)
 
-        self.rate = rate # unit: byte per millisecond
-        self.last_token = 0
+        self.rate = AppBufferTB.INITIAL_RATE # unit: byte per millisecond
+
 
         # timestamp (in ms) of last event of dequeue a chunk from appBuf
         self.last_time = 0.0
+        # num of token remaining after last event of dequeue
+        self.last_token = 0 # in bytes
+
         self.simu = simu
         self.config = self.simu._config
 
-        # rate increase granularity: increase rate every rate_inc_gran chks
-        self.RATE_INC_GRAN = 1
         # incremented by 1 for every chk sent; reset to 0 if multiple of rate_inc_gran
         self.sent_count = 0
 
-
-        init_time = 0.0 + float(chunk.size()) / self.rate
-        evt = DownStackTBEvt(self.simu, init_time, self.node, self.id())
-        self.simu.enqueue(evt)
-
     def dequeue(self, dq_time=-1.0):
         chunk = super(AppBufferTB, self).dequeue()
+
+        time_passed = self.simu.time() - self.last_time
+        assert self.last_token + time_passed * self.rate >= chunk.size()
+
         self.sent_count += 1
         self.last_time = self.simu.time()
-        if self.sent_count % self.RATE_INC_GRAN:
+        self.last_token += (time_passed * self.rate - chunk.size())
+
+        if self.sent_count % AppBufferTB.RATE_INC_GRAN:
             self.sent_count = 0
-            self.setRate(self.rate * (1.0 + 1.0/8))
+            self.__additiveIncRate()
         return chunk
 
 
     def setRate(self, new_rate):
         self.rate = new_rate
 
+    def __additiveIncRate(self):
+        self.setRate(self.rate * AppBufferTB.RATE_INC_FACTOR)
+
     def sufficientToken(self):
-        time_diff = self.simu.time() - self.last_time
+        time_passed = self.simu.time() - self.last_time
         chunk = self.peek()
         if not chunk:
             print 'AppBufferTB.sufficientToken(): no chunk available'
             return
-        token = time_diff * self.rate
-        return True if token >= chunk.size() else False
+        total_token = time_passed * self.rate + self.last_token
+        return True if total_token >= chunk.size() else False
 
-    def estimateTimeTillNextDeq(self):
+    def estimateTimeOfNextDeq(self):
         '''
             Estimate the time of next dequeue event, when sufficient number of
             have accumulated. This estimate might not be accurate, because
             rate can be changed after DownStack event is enqueued.
+            This is called only when a chunk is just pushed down to link buf,
+            or when buf_man is initializing this buffer.
             :return: timestamp in ms
         '''
-        size = 0
-        chunk = self.peek()
-        if chunk: size = chunk.size()
 
-        return float(size) / self.rate
+        cur_time = self.simu.time()
+
+
+        # see if there's an arrival of chunk before the cur_time
+        # (buffer is guaranteed to be not empty by caller)
+        chunk = self.peek()
+        size = chunk.size()
+
+        # calculate how long does take to accumulate enough tokens
+        time_till_token = float(size - self.last_token) / self.rate
+
+        estimate = -1.0
+        # if next chunk is scheduled to arrive at an earlier time
+        if chunk.startTimestamp() <= cur_time + time_till_token:
+            estimate = cur_time + time_till_token
+        else:
+            estimate = chunk.startTimestamp()
+
+        print 'AppBufferTB.estimate: chk size: {}, rate: {}, estimate: {}'.\
+                format(size, self.rate, estimate)
+        return estimate
 
 
 
