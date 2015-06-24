@@ -19,7 +19,6 @@ class BaseQueueManager(object):
             self.applyFlowDelay(chunk.src(), chunk.dst(), delay)
 
     def needECN(self):
-        return False
         cong_ctrl = self._buf_man._buffer.congCtrl()
 
         # if cur node is blocked out, this is not a source of congestion

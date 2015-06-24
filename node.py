@@ -225,7 +225,7 @@ class AppBufferTB(BaseBuffer):
     # rate increase granularity: increase rate every rate_inc_gran chks
     RATE_INC_GRAN = 1
     # rate increase factor: 1.1 meaning 1.1 * prev_rate
-    RATE_INC_FACTOR = 1.0
+    RATE_INC_FACTOR = 1.1
 
     def __init__(self, node, buf_id, simu):
         super(AppBufferTB, self).__init__(node, buf_id)
