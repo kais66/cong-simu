@@ -108,5 +108,6 @@ class QueueManagerTB(BaseQueueManager):
         new_rate = srcBuf.rate - reduction
 
         srcBuf.setRate(new_rate)
+    
 
 
