@@ -14,6 +14,7 @@ class BaseQueueManager(object):
         self._buf_man = buf_man 
         self._simu = simu
 
+
     def doECN(self, chunk):
         delay = self.decideFlowDelay(chunk)
         if delay > 0.0:
@@ -80,6 +81,11 @@ class CongSrcQueueManager(BaseQueueManager):
         return delay
         
 class QueueManagerTB(BaseQueueManager):
+    def __init__(self, buf_man, simu):
+        super(QueueManagerTB, self).__init__(buf_man, simu)
+        #self._rate_adaptor = BaseRateAdaptor()
+        self._rate_adaptor = QuadraticRateAdaptor()
+
     def doECN(self, chunk):
         '''
         based on queue occupancy, adjust (or maintain) the src's rate.
@@ -98,15 +104,25 @@ class QueueManagerTB(BaseQueueManager):
         src_id = chunk.src()
         dst_id = chunk.dst()
 
-        srcNode = self._simu.getNodeById(src_id)
-        srcBuf = srcNode.src.app_buf_man.getBufById(dst_id)
+        src_node = self._simu.getNodeById(src_id)
+        src_buf = src_node.src.app_buf_man.getBufById(dst_id)
 
         occupancy_percent = self._buf_man.occupancyPercent()
-        gain = ((occupancy_percent - BaseQueueManager.SET_POINT_RATIO) * 10) ** 2 
-        reduction = float(srcBuf.rate) / 100 * gain
 
-        new_rate = srcBuf.rate - reduction
+        new_rate = self._rate_adaptor.newRate(src_buf.rate, occupancy_percent)
+        src_buf.setRate(new_rate)
 
-        srcBuf.setRate(new_rate)
+class BaseRateAdaptor(object):
+    def newRate(self, old_rate, occupancy_percent):
+        return float(old_rate) / 2
+
+class QuadraticRateAdaptor(BaseRateAdaptor):
+    def newRate(self, old_rate, occupancy_percent):
+        gain = ((occupancy_percent - BaseQueueManager.SET_POINT_RATIO) * 10) ** 2
+        reduction = float(old_rate) / 100 * gain
+        new_rate = old_rate - reduction
+        return new_rate
+
+
 
 
