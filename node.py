@@ -226,6 +226,7 @@ class AppBufferTB(BaseBuffer):
         Implements the token bucket algorithm for rate control of the buffer.
     '''
     INITIAL_RATE = 2000.0
+    MAX_RATE = 3000.0
     # rate increase granularity: increase rate every rate_inc_gran chks
     RATE_INC_GRAN = 1
     # rate increase factor: 0.2 meaning new_rate=prev_rate + INIT_rate*0.2
@@ -309,8 +310,9 @@ class AppBufferTB(BaseBuffer):
 
     def __additiveIncRate(self):
         new_rate = self.rate + AppBufferTB.INITIAL_RATE * AppBufferTB.RATE_INC_FACTOR
-        print 'appBuf.additiveInc: rate inc from {} to {}'.format(self.rate, new_rate)
-        self.setRate(new_rate)
+        if new_rate <= AppBufferTB.MAX_RATE:
+            print 'appBuf.additiveInc: rate inc from {} to {}'.format(self.rate, new_rate)
+            self.setRate(new_rate)
 
     def sufficientToken(self):
         time_passed = self.simu.time() - self.last_time

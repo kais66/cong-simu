@@ -123,6 +123,3 @@ class QuadraticRateAdaptor(BaseRateAdaptor):
         new_rate = old_rate - reduction
         return new_rate
 
-
-
-
