@@ -83,8 +83,8 @@ class CongSrcQueueManager(BaseQueueManager):
 class QueueManagerTB(BaseQueueManager):
     def __init__(self, buf_man, simu):
         super(QueueManagerTB, self).__init__(buf_man, simu)
-        #self._rate_adaptor = BaseRateAdaptor()
-        self._rate_adaptor = QuadraticRateAdaptor()
+        self._rate_adaptor = BaseRateAdaptor()
+        #self._rate_adaptor = QuadraticRateAdaptor()
 
     def doECN(self, chunk):
         '''
