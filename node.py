@@ -1,5 +1,6 @@
 import collections
 from event import *
+from housekeep_event import LogEvent
 from main import Simulator
 from cong_ctrl import *
 from log import OutputLogger
@@ -136,7 +137,10 @@ class TrafficSink:
     def finish(self, chunk):
         #print '*** TrafficSink:finish, node %d' % (self._node.id())
         #chunk.show()
-        self._logger.log(chunk)
+        stat_list = [chunk.id(), chunk.startTimestamp(),
+                chunk.timestamp(), chunk.timestamp()-chunk.startTimestamp(),
+                chunk.src(), chunk.dst()]
+        self._logger.log(stat_list)
 
     def logToFile(self):
         self._logger.write()
@@ -243,6 +247,24 @@ class AppBufferTB(BaseBuffer):
 
         # incremented by 1 for every chk sent; reset to 0 if multiple of rate_inc_gran
         self.sent_count = 0
+
+        # init logger for inst. sending rates
+        self.rate_logger = self.simu.rateLogger()
+        self.initLoggerEvt()
+
+    def initLoggerEvt(self):
+        periodicity = 200 # in milliseconds
+
+        timestamp = 0.0
+        evt = LogEvent(self.simu, timestamp, self, periodicity)
+        self.simu.enqueue(evt)
+
+    def log(self):
+        src_id, dst_id = self.node().id(), self.buf_id
+
+        # this is the format
+        stat_list = [src_id, dst_id, self.simu.time(), self.rate]
+        self.rate_logger.log(stat_list)
 
     def dequeue(self, dq_time=-1.0):
         assert self.sufficientToken()

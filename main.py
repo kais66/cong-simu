@@ -24,15 +24,33 @@ class Simulator(object):
         self._config = config
 
         self._cong_str = config.exp_type
-        self._rate_str = config.rate_str 
-        self._logger = None
+        self._rate_str = config.rate_str
+
+        self._logger, self._rate_logger = None, None
+        # use a list to retain references to all loggers, in order to call
+        # on each of these loggers
+        self._logger_list = []
+        self.initLoggers()
+
+        #self.__dict___ = Simulator.shared_state
+        #self.queue = Queue.PriorityQueue()
+
+    def initLoggers(self):
+
+        # response time logger
         if self._config.use_ECN:
             self._logger = OutputLogger('output/respTimes_{}WithECN_{}.csv'.format(self._cong_str, self._rate_str))
         else:
             self._logger = OutputLogger('output/respTimes_{}_{}.csv'.format(self._cong_str, self._rate_str))
+        self._logger_list.append(self._logger)
 
-        #self.__dict___ = Simulator.shared_state
-        #self.queue = Queue.PriorityQueue()
+        # rate logger, only for Token Bucket based AppBuf, in PerIf experiment
+        if self._config.exp_type == 'PerIf':
+            self._rate_logger = OutputLogger('output/rate_{}.csv'.format(self._rate_str))
+            self._logger_list.append(self._rate_logger)
+
+    def rateLogger(self):
+        return self._rate_logger
 
     def loadInput(self):
         ''' cong_str: 'PerFlow' or 'PerIf'; rate_str: integer between 3000 and 10000. '''
@@ -52,7 +70,6 @@ class Simulator(object):
             raise IOError("traf_file doesn't exist: {}".format(traf_file))
         tf = TrafficGenerator(traf_file, self._config)
         tf.parseTrafficFile(self._node_dic, self)
-
 
     def enqueue(self, event):
         #print 'simu:enqueue, evt with timestamp: %f' % (event.timestamp(),)
@@ -98,8 +115,12 @@ class Simulator(object):
     def nodesDic(self):
         return self._node_dic
 
+    def registerLogger(self, logger):
+        self._logger_list.append(logger)
+
     def logToFile(self):
-        self._logger.write()
+        for logger in self._logger_list:
+            logger.write()
 
 if __name__ == '__main__':
     json_path = 'setting/base.json'

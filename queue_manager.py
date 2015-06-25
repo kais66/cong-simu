@@ -49,7 +49,6 @@ class BaseQueueManager(object):
         mean = BaseQueueManager.EXP_BACKOFF_MEAN        
         delay = random.expovariate(1.0 / mean)
         return delay
-        
 
     def applyFlowDelay(self, src_id, dst_id, delay):
         ''' get the src node, add delay to (src, dst)'s current delay '''
@@ -88,8 +87,6 @@ class QueueManagerTB(BaseQueueManager):
         :return:
         '''
         self.__adjustSrcRate(chunk)
-
-
 
     def __adjustSrcRate(self, chunk):
         '''
