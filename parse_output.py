@@ -1,9 +1,11 @@
-f = open('output/respTimes_PerIfWithECN_8000.csv', 'r')
+base_name = 'respTimes_PerIfWithECN_'
+rate_str = '12000'
+f = open('output/{}{}.csv'.format(base_name, rate_str), 'r')
 data = []
 for line in f:
     words = line.split(',')
     data.append(words)
 data.sort(key=lambda x: int(x[0]))
-outf = open('output/sorted_respTimes_PerIfWithECN_10000.csv', 'w')
+outf = open('output/sorted_{}{}.csv'.format(base_name, rate_str), 'w')
 for words in data:
     outf.write(','.join(words))

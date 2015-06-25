@@ -5,6 +5,7 @@ from main import Simulator
 from cong_ctrl import *
 from log import OutputLogger
 from chunk import Chunk
+import math
 
 class Node(object):
     ''' Provides the 'node' abstraction. Because we need to simulate two types of 
@@ -306,7 +307,9 @@ class AppBufferTB(BaseBuffer):
                 next_sched_time = self.estimateTimeOfNextDeq()
                 evt = DownStackTBEvt(self.simu, next_sched_time, self.node(), self.buf_id)
                 self.simu.enqueue(evt)
-                print 'appBuf.setRate: enq a downStackEvt'
+
+                print 'appBuf.setRate: enq a downStackEvt, next_sched_time: {}, sd: {}, {}'.\
+                    format(next_sched_time, self.node().id(), self.buf_id)
 
     def __additiveIncRate(self):
         new_rate = self.rate + AppBufferTB.INITIAL_RATE * AppBufferTB.RATE_INC_FACTOR
@@ -319,7 +322,7 @@ class AppBufferTB(BaseBuffer):
         chunk = self.peek()
         if not chunk:
             print 'AppBufferTB.sufficientToken(): no chunk available'
-            return
+            return False
         total_token = time_passed * self.rate + self.last_token
 
         if total_token - chunk.size() < -1: # total_token is a float
@@ -350,15 +353,15 @@ class AppBufferTB(BaseBuffer):
         size = chunk.size()
 
         # calculate how long does take to accumulate enough tokens
-        time_till_token = max(float(size - self.last_token) / self.rate, 0.0)
+        time_till_token = max(math.ceil(float(size - self.last_token) / self.rate), 0.0)
 
         # if next chunk is scheduled to arrive after the enough-token
         # time, need to schedule later
         estimate = max(chunk.startTimestamp(), cur_time + time_till_token)
 
-        print 'AppBufferTB.estimate: chk size: {}, rate: {}, estimate: {}'.\
-                format(size, self.rate, estimate)
-        print 'cur_time: {}, time_till_token: {}, chunk start ts: {}'.\
+        print 'AppBufferTB.estimate: chk size: {}, last_token: {}, rate: {}, estimate: {}'.\
+                format(size, self.last_token, self.rate, estimate)
+        print '     cur_time: {}, time_till_token: {}, chunk start ts: {}'.\
                 format(cur_time, time_till_token, chunk.startTimestamp())
         return estimate
 
