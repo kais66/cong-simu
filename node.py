@@ -228,6 +228,7 @@ class AppBufferTB(BaseBuffer):
     '''
     INITIAL_RATE = 2000.0
     MAX_RATE = 3000.0
+    MIN_RATE = 100.0 # 100 KB/s, or 100B/ms
     # rate increase granularity: increase rate every rate_inc_gran chks
     RATE_INC_GRAN = 1
     # rate increase factor: 0.2 meaning new_rate=prev_rate + INIT_rate*0.2
@@ -288,11 +289,15 @@ class AppBufferTB(BaseBuffer):
 
     def setRate(self, new_rate):
         old_rate = self.rate
+        #assert old_rate >= AppBufferTB.MIN_RATE
+
         self.rate = new_rate
         print 'AppBuf.setRate: rate changed from {} to {}'.format(old_rate, new_rate)
 
         # rate reduced
         if new_rate < old_rate:
+
+
             time_passed = self.simu.time() - self.last_time
             token_accrued = old_rate * time_passed
 

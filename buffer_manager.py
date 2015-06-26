@@ -336,7 +336,8 @@ class LinkBufferManagerPerIf(LinkBufferManager):
         self._cur_byte += chunk.size()
 
         node_id = self._node.id()
-        if self._queue_man and chunk.dst() != node_id and chunk.src() != node_id:
+        #if self._queue_man and chunk.dst() != node_id and chunk.src() != node_id:
+        if self._queue_man and chunk.dst() != node_id:
             if self._queue_man.needECN():
                 self._queue_man.doECN(chunk)
 
