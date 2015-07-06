@@ -279,11 +279,3 @@ class TopoGenerator(object):
         #print next_hop
 
         self.src_pred_dic[node.id()] = pred
-
-    
-
-            
-
-class LinkProfileInitializer(object):
-    DEFAULT_BANDWIDTH = 131072000 # 125*1024*1024, 1Gbps == 125MBps
-    LATENCY = 10 # ms

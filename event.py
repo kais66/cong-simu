@@ -1,4 +1,5 @@
-from chunk import Chunk 
+from chunk import Chunk
+
 
 class Event(object):
     def __init__(self, simu, timestamp):
@@ -13,7 +14,8 @@ class Event(object):
 
     def timestamp(self):
         return self._timestamp
-        
+
+
 class DownStackEvt(Event):
     ''' Pushing a chunk from app buffer onto link layer buffer for sending '''
     def __init__(self, simu, timestamp, node, dst_id):
@@ -40,6 +42,7 @@ class DownStackEvt(Event):
 
     #def printEvt(self):
         print '=== end executing DownStackEvt\n'
+
 
 class DownStackTBEvt(DownStackEvt):
     '''
@@ -77,10 +80,8 @@ class DownStackTBEvt(DownStackEvt):
             print 'DownStackTBEvt: no chunk to be pushed down, exiting'
             return
 
-
         chunk.updateTimestamp(self.timestamp())
         chunk.show()
-
 
         evt = TxStartEvt(self._simu, self._simu.time(), self._node.getBufManByDst(chunk.dst()))
         self._simu.enqueue(evt)
@@ -92,8 +93,6 @@ class DownStackTBEvt(DownStackEvt):
             print 'DownStackTBEvt: next sched downStack time: {}'.format(next_sched_time)
 
         print '=== end executing DownStackTBEvt\n'
-
-
 
 
 class DownStackWithECNEvt(DownStackEvt):
@@ -233,7 +232,6 @@ class RxStartEvt(Event): # block_in state change at receiver
         print '=== RxStartEvt: executing, time: %f, node id: %d, chunk: ' % (self._timestamp, self._node.id())
         self._chunk.show()
 
-
         if self._chunk.dst() != self._node.id():
             self._node.receive(self._chunk)
             evt = RxEndEvt(self._simu, self._timestamp + self._tx_time, self._chunk, self._node)
@@ -249,6 +247,7 @@ class RxStartEvt(Event): # block_in state change at receiver
             evt = FinDeliveryEvt(self._simu, self._timestamp + self._tx_time, self._chunk, self._node)
             self._simu.enqueue(evt)
         print '=== end RxStartEvt\n'
+
 
 class RxEndEvt(Event):
     def __init__(self, simu, timestamp, chunk, node):
@@ -279,17 +278,7 @@ class FinDeliveryEvt(Event):
         self._chunk.show()
         print '=== end FinDeliveryEvt\n'
 
-class RxEvt(Event):
-    ''' Receive-Event. '''
-    def __init__(self, simu, timestamp, chunk, node):
-        super(RxEvt, self).__init__(simu, timestamp)
-        self._chunk = chunk
-        self._node = node
-        #self._buf_man = buf_man
 
-    def execute(self):
-        self._chunk.updateTimestamp(self._timestamp)
-        self._node.receive(self._chunk)
-        print '=== RxEvt: executing, time: %f, node id: %d, chunk: ' % (self._timestamp, self._node.id())
-        self._chunk.show()
-
+class TxCtrlMsgEvt(Event):
+    def __init__(self, simu, timestamp):
+        super(TxCtrlMsgEvt, self).__init__(simu, timestamp)

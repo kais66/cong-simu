@@ -83,6 +83,9 @@ class AppBufferManager(BaseBufferManager):
         return chunk
 
 class AppBufferManagerTB(AppBufferManager):
+    '''
+    With Token Bucket controlled buffers.
+    '''
     def addBuffer(self, buf_id):
         self._buffers[buf_id] = AppBufferTB(self._node, buf_id, self._simulator)
 
