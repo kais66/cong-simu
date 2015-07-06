@@ -279,6 +279,14 @@ class FinDeliveryEvt(Event):
         print '=== end FinDeliveryEvt\n'
 
 
-class TxCtrlMsgEvt(Event):
-    def __init__(self, simu, timestamp):
-        super(TxCtrlMsgEvt, self).__init__(simu, timestamp)
+class ECNMsgEvt(Event):
+    def __init__(self, simu, timestamp, buf_man, chunk):
+        super(ECNMsgEvt, self).__init__(simu, timestamp)
+        self._buf_man = buf_man
+        self._chunk = chunk
+
+    def execute(self):
+        print '\n=== begin ECNMsgEvt'
+        self._buf_man._queue_man.doECN(self._chunk)
+        print '\n=== end ECNMsgEvt'
+

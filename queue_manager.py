@@ -92,7 +92,10 @@ class QueueManagerTB(BaseQueueManager):
         :param chunk:
         :return:
         '''
+
+
         self.__adjustSrcRate(chunk)
+
 
     def __adjustSrcRate(self, chunk):
         '''

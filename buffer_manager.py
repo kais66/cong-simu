@@ -342,7 +342,14 @@ class LinkBufferManagerPerIf(LinkBufferManager):
         #if self._queue_man and chunk.dst() != node_id and chunk.src() != node_id:
         if self._queue_man and chunk.dst() != node_id:
             if self._queue_man.needECN():
-                self._queue_man.doECN(chunk)
+                # use the following statement if don't consider propogation delay for ctrl msg
+                # self._queue_man.doECN(chunk)
+
+                # considering link delays, need to enqueue a ECN msg event
+                latency = self._simulator.calcLatency(node_id, chunk.src())
+                evt = ECNMsgEvt(self._simulator, self._simulator.time() + latency,
+                                self, chunk)
+                self._simulator.enqueue(evt)
 
     def schedBuffer(self):
         return self._id if self.canDequeue(self._id) else -1

@@ -122,6 +122,26 @@ class Simulator(object):
         for logger in self._logger_list:
             logger.write()
 
+    def calcLatency(self, src_id, dst_id):
+        '''
+        public interface. Calculate raw aggregated link latencies between a src and a dst
+        :param src_id:
+        :param dst_id:
+        :return:
+        '''
+        cur_id = src_id
+        latency = 0.0
+        while cur_id != dst_id:
+            cur_node = self._node_dic[cur_id]
+            buf_man = cur_node.getBufManByDst(dst_id)
+            latency += buf_man.latency()
+            print 'simu.calcLatency: latency between {} and {} is: {}'.format(
+                cur_id, buf_man.id(), buf_man.latency())
+            cur_id = buf_man.id()
+        print 'simu.calcLatency: overall latency between {} and {} is: {}'.format(
+                src_id, dst_id, latency)
+        return latency
+
 if __name__ == '__main__':
     json_path = 'setting/base.json'
     config = Config(json_path, sys.argv)
