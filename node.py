@@ -4,7 +4,7 @@ from housekeep_event import LogEvent
 from main import Simulator
 from cong_ctrl import *
 from log import OutputLogger
-from chunk import Chunk
+from chunk import Chunk, File
 import math
 
 class Node(object):
@@ -135,13 +135,25 @@ class TrafficSink:
         self._node = node
         self._logger = logger
 
+        # file_id (first chk's id) : File
+        self._file_dict = {}
+
     def finish(self, chunk):
         #print '*** TrafficSink:finish, node %d' % (self._node.id())
         #chunk.show()
-        stat_list = [chunk.id(), chunk.startTimestamp(),
-                chunk.timestamp(), chunk.timestamp()-chunk.startTimestamp(),
-                chunk.src(), chunk.dst()]
-        self._logger.log(stat_list)
+
+        # see if a file object is present in dict
+        file_id = chunk.fileId()
+        if file_id not in self._file_dict:
+            self._file_dict[file_id] = File(chunk)
+
+        file = self._file_dict[file_id]
+        file.insertChk(chunk)
+        if file.isComplete():
+            stat_list = [chunk.fileId(), chunk.startTimestamp(),
+                    chunk.timestamp(), chunk.timestamp()-chunk.startTimestamp(),
+                    chunk.src(), chunk.dst()]
+            self._logger.log(stat_list)
 
     def logToFile(self):
         self._logger.write()

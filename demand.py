@@ -1,34 +1,122 @@
+###############################################################################
+# This file generate chunk arrival trace file for the simulator.
+# row format for the generated input file:
+# src, dst, chk_size, arrival_time, start_offset, end_offset, file_size, chk_id
+###############################################################################
+
 import random
 import sys
+import math
+from scipy.stats import pareto
+import unit_conv
 
-class Demand(object):
+class ArrivalTrace(object):
     start_t = 0.0
-    def __init__(self):
-        pass
 
-    def generate(self, band_str):
-        length = 100000.0
+    def __init__(self, rate_mbyteps_str):
+        '''
+        rate: per (src, dst) base rate in MB/s
+        '''
+        self.rate_mbyteps = float(rate_mbyteps_str)
+        self.rate_bytepms = unit_conv.convertMbytepsecToBytepmsec(self.rate_mbyteps)
 
-        #rate = 3000.0 # or 6750, 10000, 
-        #self.band = 10000.0 # bytes per ms
-        self.band = float(band_str)
-        src = [1, 2]
-        dst = [6, 7, 8, 9]
+        self.start_msec = 0.0
+        self.end_msec = 100000.0
 
-        size = 1048576
-        demand = []
+        # 50KB, value taken from "FlowCompletionTime" paper
+        # make sure the mean file size is a multiple of 1000
+        self.mean_file_size = 1000000
+        # if a file of size greater than the chunk size, it will be segmented
+        #self.max_chk_size_bytes = 1048576
+        self.max_chk_size_bytes = 1000000
+
+        # change to a different Demand object to use another traffic demand profile
+        demand_initializer = DemandSmallEqual(self.rate_bytepms)
+        self.demand_list = demand_initializer.demandList()
+
+        # list of file arrivals
+        self.arrival_list = []
+        # final output is this list, its row format is
+        # src, dst, chk_size_bytes, arrival_time, chk_id, start_offset,
+        # end_offset, file_id
+        self.chk_arrival_list = []
+
+
+    def generate(self):
         random.seed()
-        for s in src:
-            demand.extend(self.genOneSrcPoisson(length, s, dst, size))
-            #demand.extend(self.genOneSrcPoissonSkewed(length, s, dst, size))
-        demand.sort(key=lambda x: x[3])
-        chk_id = 1
-        for l in demand:
-            l.append(chk_id)
-            chk_id += 1
-            
-        self.write(demand)
 
+        for line in self.demand_list:
+            #inter_arrival_time_func = NextExponentialInterArrival
+            #file_size_func = NextParetoSize
+            inter_arrival_time_func = NextDeterministicInterArrival
+            file_size_func = NextDeterministicSize
+
+            this_arr_list = self.genOneSrcDst(line, inter_arrival_time_func, file_size_func)
+            self.arrival_list.extend(this_arr_list)
+            #demand.extend(self.genOneSrcPoisson(length, s, dst, size))
+            #demand.extend(self.genOneSrcPoissonSkewed(length, s, dst, size))
+
+        self.arrival_list.sort(key=lambda x: x[2])
+
+        chk_id = 1
+
+        for row in self.arrival_list:
+            src, dst, arrival_time, file_size = row[0], row[1], row[2], row[3]
+            remain_file_size = file_size
+
+            start_chk_id = chk_id
+            # this chunk's offset with the first and last chunk of this file
+            # invariant: start_offset + end_offset + 1 = num_chks_in_file
+            #start_offset = 0
+
+            # calculate num_chks
+            num_chks = remain_file_size // self.max_chk_size_bytes
+            if remain_file_size % self.max_chk_size_bytes != 0:
+                num_chks += 1
+            end_chk_id = start_chk_id + num_chks - 1
+
+            while remain_file_size > 0:
+                # insert a new entry for a chunk
+                chk_size = min(remain_file_size, self.max_chk_size_bytes)
+
+                start_offset = chk_id - start_chk_id
+                end_offset = end_chk_id - chk_id
+                assert start_offset >= 0 and end_offset >= 0
+                chk_arrival_row = [src, dst, chk_size, arrival_time,
+                    start_offset, end_offset, file_size, chk_id]
+
+                self.chk_arrival_list.append(chk_arrival_row)
+
+                chk_id += 1
+                remain_file_size -= chk_size
+            
+        self.write()
+
+    def genOneSrcDst(self, demand_row, inter_arrival_func, file_size_func):
+        '''
+        given a demand_row, i.e. src, dst, demanded_rate, and functions for
+        getting file size and inter arrival times, generate a list of rows,
+        where each row is corresponding to one file arrival.
+        '''
+        print demand_row
+        src, dst, demanded_bytepmsec = demand_row[0], demand_row[1], demand_row[2]
+        mean_arrival_rate = float(demanded_bytepmsec) / self.mean_file_size
+
+        arrival_list = []
+        cur_time = self.start_msec
+        while cur_time < self.end_msec:
+            file_size = file_size_func(self.mean_file_size)
+            arrival_list.append([src, dst, cur_time, file_size])
+
+            cur_time += inter_arrival_func(mean_arrival_rate)
+
+        return arrival_list
+
+    def write(self):
+        fname = 'input_files/traff_poisson_' + str(self.rate_mbyteps) + '.txt'
+        with open(fname, 'w') as f:
+            for line in self.chk_arrival_list:
+                f.write(','.join([str(x) for x in line]) + '\n')
 
     def genOneSrcDeterministic(self, length, src, dst, size): 
         demand = []
@@ -49,6 +137,7 @@ class Demand(object):
             t += random.expovariate(arrival_rate) # this function takes mean rate as arg, or reciprocal of inter-arr time
             demand.append([src, dst_id, size, t])
         return demand
+
     def genOneSrcPoissonSkewed(self, length, src, dst, size):
         demand = []
         t = 0
@@ -60,17 +149,78 @@ class Demand(object):
             demand.append([src, dst_id, size, t])
             cnt += 1
         return demand
-                 
-    
-    def write(self, demand):
-        fname = 'input_files/traff_poisson_' + str(int(self.band)) + '.txt'
-        with open(fname, 'w') as f:
-            for line in demand:
-                f.write(','.join([str(x) for x in line]) + '\n') 
+
+###############################################################################
+# Demand classes: provide per (src, dst) traffic demand list, in terms of rate.
+###############################################################################
+class BaseDemand(object):
+    def __init__(self, rate_str=None):
+        self.demand_list = []
+
+    def demandList(self):
+        return self.demand_list
+
+class DemandSmallEqual(BaseDemand):
+    '''
+    This new implementation assumes rate is the rate for every (src, dst) pair.
+    '''
+    def __init__(self, rate=None):
+        '''
+        :param rate: rate in bytes/ms
+        :return:
+        '''
+        self.demand_list = []
+        self.src_list = [1, 2]
+        self.dst_list = [6, 7, 8, 9]
+        self.writeDemandList(rate)
+
+    def writeDemandList(self, rate):
+        assert rate is not None
+        for src in self.src_list:
+            for dst in self.dst_list:
+                self.demand_list.append([src, dst, rate])
+
+class DemandSmallSkewed(BaseDemand):
+    def __init__(self, rate=None):
+        self.demand_list = []
+        self.src_list = [1, 2]
+        self.dst_list = [6, 7, 8, 9]
+        self.writeDemandList(rate)
+
+    def writeDemandList(self, rate):
+        assert rate is not None
+        for src in self.src_list:
+            for dst in self.dst_list:
+                actual_rate = rate * 3 if dst == 9 else rate
+                self.demand_list.append([src, dst, actual_rate])
+
+###############################################################################
+# A few functions to return a value according to certain distribution
+###############################################################################
+def NextExponentialInterArrival(mean_arr_rate):
+    '''
+    :param mean_arr_rate: number of arrivals per milli sec
+    :return: inter-arrival time in milli seconds.
+    '''
+    return float(random.expovariate(mean_arr_rate))
+
+def NextDeterministicInterArrival(mean_arr_rate):
+    return 1/float(mean_arr_rate)
+
+def NextParetoSize(mean):
+    alpha = 1.20
+    sigma = (self.alpha - 1) * mean / alpha
+    size = int(math.ceil(pareto.rvs(alpha, 0, sigma)))
+    if size == 0:
+        return NextParetoSize(mean)
+    return size
+
+def NextDeterministicSize(mean):
+    return mean
 
 if __name__ == "__main__":
     if len(sys.argv) != 2:
         print "usage: python demand.py rate_str"
         sys.exit(-1)
-    d = Demand()
-    d.generate(sys.argv[1])
+    t = ArrivalTrace(sys.argv[1])
+    t.generate()

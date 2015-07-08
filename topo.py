@@ -23,10 +23,12 @@ class BaseBufManBuilder(object):
     #band = 131072.0 # unit: byte per ms, == 1Gbps
     band = 6750.0 # byte per ms, == 54 Mbps
     lat = 5.0 # ms
+
     def __init__(self, config):
         self.config = config
 
-    def buildBufMan(self, simu, node, if_id): # interface id, because each interface has a buf man
+    # interface id, because each interface has a buf man
+    def buildBufMan(self, simu, node, if_id):
         pass
 
     def genObservers(self, simu, topo):
@@ -34,7 +36,8 @@ class BaseBufManBuilder(object):
 
 class BufManBuilderPerFlow(BaseBufManBuilder):
     def buildBufMan(self, simu, node, if_id):
-        buf_man = LinkBufferManagerPerFlow(simu, if_id, BaseBufManBuilder.band, BaseBufManBuilder.lat)
+        buf_man = LinkBufferManagerPerFlow(simu, if_id, BaseBufManBuilder.band,
+                                           BaseBufManBuilder.lat)
         buf_man.attachNode(node)
         node.attachBufMan(buf_man)
         node.addWeight(BaseBufManBuilder.lat) # by default, use latency as link weight
@@ -107,7 +110,8 @@ class BufManBuilderPerIfWithECN(BaseBufManBuilder):
 
 class TrafficGenerator(object):
     ''' 
-        Load the traffic profile from input file, generate corresponding events and insert them into sender's buffers.
+        Load the traffic profile from input file, generate corresponding events
+        and insert them into sender's buffers.
     '''
     def __init__(self, traff_file, config):
         self.src, self.dst = set(), {} # node_id : Node
@@ -123,7 +127,7 @@ class TrafficGenerator(object):
         for line in f:
             if not line or line[0] == '#': continue
             words = line.split(',')
-            if len(words) != 5: 
+            if len(words) != 8:
                 print 'Error'
                 continue
 
@@ -134,7 +138,15 @@ class TrafficGenerator(object):
                     print 'error'
                     sys.exit()
 
-                chk = Chunk(int(words[0]), int(words[1]), int(words[2]), float(words[3]), int(words[4]))
+                chk_size, arrival_time = int(words[2]), float(words[3])
+                chk_id = int(words[-1])
+                chk = Chunk(src_id, dst_id, chk_size, arrival_time, chk_id)
+
+                # file related, in addition to chunk related, fields
+                start_offset, end_offset, file_size = int(words[4]), \
+                                            int(words[5]),int(words[6])
+                chk.initFileRelatedField(start_offset, end_offset, file_size)
+
                 node = node_dic[src_id]
                 if not node.src:
 
@@ -247,7 +259,8 @@ class TopoGenerator(object):
         dist[node.id()] = 0
         next_hop = {}
 
-        # the second condition, along with visited node checking, guarantees we only visit each node once. Thus without
+        # the second condition, along with visited node checking,
+        # guarantees we only visit each node once. Thus without
         # using decrease-key, we still achieve running time of O((V+E)*lgV)
         while not q.empty() and len(visited) < len(self.node_dic):
             nd = q.get()[1]
