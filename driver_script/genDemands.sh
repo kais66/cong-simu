@@ -7,5 +7,5 @@ cd ../
 #done
 
 for thisRate in "${rates[@]}"; do
-    python ./demand.py $thisRate
+    python ./gen_traffic.py $thisRate
 done
