@@ -3,7 +3,7 @@
 #cong_str='PerFlow'
 cong_str='PerIf'
 
-rates=("0.5" "0.7" "0.9" "1.1" "1.3" "1.5")
+rates=("0.5" "0.7" "0.9" "1.1" "1.3" "1.5" "2.0" "3.0")
 
 cong_arr=(PerFlow PerIf)
 ecn='true'

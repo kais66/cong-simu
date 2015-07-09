@@ -4,8 +4,8 @@ import process_trace
 from .. import demand
 
 
-#rates = ["0.5", "0.7", "0.9", "1.1", "1.3", "1.5"]
-rates = ['1.0']
+rates = ["0.5", "0.7", "0.9", "1.1", "1.3", "1.5", "2.0", "3.0"]
+#rates = ['1.0']
 trace_base_path = '/Users/SunnySky/workspace/cong-simu/output/'
 
 class ThroughputPlot(object):
@@ -36,11 +36,15 @@ class ThroughputPlot(object):
                 rate = rates[rate_pos]
 
                 file_path = '{}respTimes_{}_{}.csv'.format(trace_base_path, exp, rate)
+                print file_path
                 thru_data = ThroughputData(file_path)
                 thru[exp_pos][rate_pos] = thru_data.overallThroughput()
+                print 'value at pos ({}, {}) is: {}'.format(exp_pos, rate_pos,
+                                                        thru[exp_pos][rate_pos])
 
         # now plot
         line, = plt.plot(offered, thru[0], '--', linewidth=2)
+        plt.plot(offered, thru[1], linewidth=2)
         plt.show()
 
 
