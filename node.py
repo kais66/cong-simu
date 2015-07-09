@@ -169,7 +169,6 @@ class BaseBuffer(object): # buffer could be for a single interface, or for a sin
         #assert node is not None
         self.cur_node = node
 
-
         # buffer scheduling cycle, blocking time
         self.next_sched = 0.0 # in millisecond
         #self.sched_intv = 0.1 # 1MB chunk per 0.1ms, i.e. default is 10GB/s 
