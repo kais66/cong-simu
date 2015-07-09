@@ -3,6 +3,8 @@
 #cong_str='PerFlow'
 cong_str='PerIf'
 
+rates=("0.5" "0.7" "0.9" "1.1" "1.3" "1.5")
+
 cong_arr=(PerFlow PerIf)
 ecn='true'
 cd ../
@@ -14,8 +16,9 @@ cd ../
 #    done
 #done
 
-for (( i=2000; i<16000; i=i+2000)); do
-  python main.py PerIf $i true
-  #python main.py PerFlow $i
-done
 
+for congStr in ${cong_arr[*]}; do
+    for thisRate in "${rates[@]}"; do
+        python main.py $congStr $thisRate false
+    done
+done
