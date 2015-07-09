@@ -46,10 +46,10 @@ class ArrivalTrace(object):
         random.seed()
 
         for line in self.demand_list:
-            #inter_arrival_time_func = NextExponentialInterArrival
-            #file_size_func = NextParetoSize
-            inter_arrival_time_func = NextDeterministicInterArrival
-            file_size_func = NextDeterministicSize
+            inter_arrival_time_func = NextExponentialInterArrival
+            file_size_func = NextParetoSize
+            #inter_arrival_time_func = NextDeterministicInterArrival
+            #file_size_func = NextDeterministicSize
 
             this_arr_list = self.genOneSrcDst(line, inter_arrival_time_func, file_size_func)
             self.arrival_list.extend(this_arr_list)
@@ -231,7 +231,7 @@ def NextDeterministicInterArrival(mean_arr_rate):
 
 def NextParetoSize(mean):
     alpha = 1.20
-    sigma = (self.alpha - 1) * mean / alpha
+    sigma = (alpha - 1) * mean / alpha
     size = int(math.ceil(pareto.rvs(alpha, 0, sigma)))
     if size == 0:
         return NextParetoSize(mean)
