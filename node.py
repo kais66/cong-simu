@@ -152,7 +152,8 @@ class TrafficSink:
         if file.isComplete():
             stat_list = [chunk.fileId(), chunk.startTimestamp(),
                     chunk.timestamp(), chunk.timestamp()-chunk.startTimestamp(),
-                    chunk.src(), chunk.dst()]
+                    chunk.src(), chunk.dst(), chunk._file_size]
+            print 'finish file size: {}'.format(chunk._file_size)
             self._logger.log(stat_list)
 
     def logToFile(self):

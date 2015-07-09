@@ -160,6 +160,12 @@ class BaseDemand(object):
     def demandList(self):
         return self.demand_list
 
+    def offeredLoad(self):
+        '''
+        return the overrall offered load
+        '''
+        pass
+
 class DemandSmallEqual(BaseDemand):
     '''
     This new implementation assumes rate is the rate for every (src, dst) pair.
@@ -172,7 +178,11 @@ class DemandSmallEqual(BaseDemand):
         self.demand_list = []
         self.src_list = [1, 2]
         self.dst_list = [6, 7, 8, 9]
-        self.writeDemandList(rate)
+
+        if rate is not None:
+            self.writeDemandList(rate)
+
+        #self.rate = rate
 
     def writeDemandList(self, rate):
         assert rate is not None
@@ -180,12 +190,20 @@ class DemandSmallEqual(BaseDemand):
             for dst in self.dst_list:
                 self.demand_list.append([src, dst, rate])
 
+    def offeredLoad(self, rate):
+        return float(len(self.src_list)) * len(self.dst_list) * rate
+
+
 class DemandSmallSkewed(BaseDemand):
     def __init__(self, rate=None):
         self.demand_list = []
         self.src_list = [1, 2]
         self.dst_list = [6, 7, 8, 9]
-        self.writeDemandList(rate)
+
+        if rate is not None:
+            self.writeDemandList(rate)
+
+        #self.rate = rate
 
     def writeDemandList(self, rate):
         assert rate is not None
@@ -193,6 +211,10 @@ class DemandSmallSkewed(BaseDemand):
             for dst in self.dst_list:
                 actual_rate = rate * 3 if dst == 9 else rate
                 self.demand_list.append([src, dst, actual_rate])
+
+    def offeredLoad(self, rate):
+        nSrc, nDst = len(self.src_list), len(self.dst_list)
+        return float(nSrc) * (nDst-1) * rate + float(nSrc) * 1 * 3 * rate
 
 ###############################################################################
 # A few functions to return a value according to certain distribution
@@ -218,9 +240,9 @@ def NextParetoSize(mean):
 def NextDeterministicSize(mean):
     return mean
 
-if __name__ == "__main__":
-    if len(sys.argv) != 2:
-        print "usage: python demand.py rate_str"
-        sys.exit(-1)
-    t = ArrivalTrace(sys.argv[1])
-    t.generate()
+# if __name__ == "__main__":
+#     if len(sys.argv) != 2:
+#         print "usage: python demand.py rate_str"
+#         sys.exit(-1)
+#     t = ArrivalTrace(sys.argv[1])
+#     t.generate()

@@ -17,7 +17,8 @@ class OutputLogger(object):
 
     def log(self, stat_list):
         stat_str = [str(x) for x in stat_list]
-        stat_str.append('\n')
+        stat_str[-1] += '\n'
+        #stat_str.append('\n')
         self._content.append(','.join(stat_str))
         
     def write(self):
