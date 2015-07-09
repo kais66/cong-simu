@@ -3,7 +3,7 @@ import matplotlib.pyplot as plt
 import process_trace
 from .. import demand
 
-
+# this rate list should be kept in sync with the one in the shell scripts
 rates = ["0.5", "0.7", "0.9", "1.1", "1.3", "1.5", "2.0", "3.0"]
 #rates = ['1.0']
 trace_base_path = '/Users/SunnySky/workspace/cong-simu/output/'
@@ -43,8 +43,10 @@ class ThroughputPlot(object):
                                                         thru[exp_pos][rate_pos])
 
         # now plot
-        line, = plt.plot(offered, thru[0], '--', linewidth=2)
-        plt.plot(offered, thru[1], linewidth=2)
+        for exp_pos in xrange(len(experiment_list)):
+            plt.plot(offered, thru[exp_pos], '-D', linewidth=4, label=experiment_list[exp_pos])
+        #plt.plot(offered, thru[0], '-1', linewidth=4)
+        labelPlot('Offered load (MB/s)', 'Throughput (MB/s)', '')
         plt.show()
 
 
@@ -79,6 +81,15 @@ class ThroughputData(object):
         valid_entries = self.array[self.array[:, ThroughputData.DST_POS] == dst]
         return self.overallThroughput(valid_entries)
 
+###############################################################################
+# Some utility functions for plotting
+###############################################################################
+def labelPlot(x, y, title):
+    plt.xlabel(x)
+    plt.ylabel(y)
+    plt.title(title)
+    legend = plt.legend(loc='lower right', shadow=True, fontsize='x-large')
+    #legend = plt.legend(shadow=True, fontsize='x-large')
 
 if __name__ == "__main__":
     plt = ThroughputPlot()
