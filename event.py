@@ -1,5 +1,5 @@
 from chunk import Chunk
-
+import config
 
 class Event(object):
     def __init__(self, simu, timestamp):
@@ -24,24 +24,28 @@ class DownStackEvt(Event):
         self._dst_id = dst_id
 
     def execute(self):
-        print '\n=== begin DownStackEvt: executing, time: %f' % (self._timestamp)
+
+        if config.DEBUG:
+            print '\n=== begin DownStackEvt: executing, time: %f' % (self._timestamp)
 
         # see if the app buffer is currently blocked, 
         if not self._node.src:
             raise AttributeError('node.src is None')
-        
-        self.printEvt()
+
+
+
         chunk = self._node.src.downOneChunk(self._dst_id)
-        if chunk:
-            chunk.show()
-        else:
-            print 'DownStackEvt: no chunk to be pushed down'
+        if config.DEBUG:
+            if chunk:
+                chunk.show()
+            else:
+                print 'DownStackEvt: no chunk to be pushed down'
 
         evt = TxStartEvt(self._simu, chunk.startTimestamp(), self._node.getBufManByDst(chunk.dst()))
         self._simu.enqueue(evt)
 
-    #def printEvt(self):
-        print '=== end executing DownStackEvt\n'
+        if config.DEBUG:
+            print '=== end executing DownStackEvt\n'
 
 
 class DownStackTBEvt(DownStackEvt):
@@ -50,16 +54,20 @@ class DownStackTBEvt(DownStackEvt):
         sending rate.
     '''
     def execute(self):
-        print '\n=== begin DownStackTBEvt: executing, time: {}, node: {}, dst_id: {}'.\
-              format(self._timestamp, self._node.id(), self._dst_id)
+        if config.DEBUG:
+            print '\n=== begin DownStackTBEvt: executing, time: {}, node: {}, dst_id: {}'.\
+                format(self._timestamp, self._node.id(), self._dst_id)
+
         appBuf = self._node.src.app_buf_man.getBufById(self._dst_id)
         if appBuf.empty():
-            print '=== end executing DownStackTBEvt: no chunk in queue \n'
+            if config.DEBUG:
+                print '=== end executing DownStackTBEvt: no chunk in queue \n'
             return
 
         # try schedule the head-of-queue chunk
         if not appBuf.sufficientToken():
-            print '=== end executing DownStackTBEvt: no sufficient token \n'
+            if config.DEBUG:
+                print '=== end executing DownStackTBEvt: no sufficient token \n'
             return
 
         # buf is guaranteed to be not empty
@@ -67,21 +75,25 @@ class DownStackTBEvt(DownStackEvt):
 
         # if chunk arrives after cur time
         if chunk.startTimestamp() > self.timestamp():
-            print '=== end executing DownStackTBEvt: not yet chk start time: {}\n'. \
-                format(chunk.startTimestamp())
+            if config.DEBUG:
+                print '=== end executing DownStackTBEvt: not yet chk start time: {}\n'. \
+                    format(chunk.startTimestamp())
             return
 
-        print 'DownStackTBEvt: do downStack'
+        if config.DEBUG: print 'DownStackTBEvt: do downStack'
 
         # because there're enough tokens, now first push a chunk down, then
         # schedule another DownStack evt.
         chunk = self._node.src.downOneChunk(self._dst_id)
         if not chunk:
-            print 'DownStackTBEvt: no chunk to be pushed down, exiting'
+            if config.DEBUG:
+                print 'DownStackTBEvt: no chunk to be pushed down, exiting'
             return
 
         chunk.updateTimestamp(self.timestamp())
-        chunk.show()
+
+        if config.DEBUG:
+            chunk.show()
 
         evt = TxStartEvt(self._simu, self._simu.time(), self._node.getBufManByDst(chunk.dst()))
         self._simu.enqueue(evt)
@@ -90,9 +102,10 @@ class DownStackTBEvt(DownStackEvt):
             next_sched_time = appBuf.estimateTimeOfNextDeq()
             evt = DownStackTBEvt(self._simu, next_sched_time, self._node, self._dst_id)
             self._simu.enqueue(evt)
-            print 'DownStackTBEvt: next sched downStack time: {}'.format(next_sched_time)
+            if config.DEBUG:
+                print 'DownStackTBEvt: next sched downStack time: {}'.format(next_sched_time)
 
-        print '=== end executing DownStackTBEvt\n'
+        if config.DEBUG: print '=== end executing DownStackTBEvt\n'
 
 
 class DownStackWithECNEvt(DownStackEvt):
@@ -169,20 +182,22 @@ class TxStartEvt(Event):
     def execute(self):
         buf_id = self._buf_man.schedBuffer()
         if self._timestamp < self._buf_man._tx_until or buf_id == -1: # nothing to send
-            print '=== TxStartEvt: executing, time: %f, nothing to send for node id: %d, buf_man id: %d ===' % (self._timestamp, self._buf_man._node._id, self._buf_man._id)
-            #evt = TxStartEvt(self._simu, self._timestamp + self._buf_man.schedInterval(), self._buf_man)
-            #self._simu.enqueue(evt)
+            if config.DEBUG:
+                print '=== TxStartEvt: executing, time: %f, nothing to send for node id: %d, buf_man id: %d ===' % \
+                    (self._timestamp, self._buf_man._node._id, self._buf_man._id)
+
             return
-        
-        print '\n=== begin TxStartEvt'
+
+        if config.DEBUG:
+            print '\n=== begin TxStartEvt'
         chunk = self._buf_man.getBufById(buf_id).peek()
         chunk.updateTimestamp(self._timestamp)
         chunk.setStatus(Chunk.DURING_TX)
 
-
-        print '=== TxStartEvt: executing, time: %f, node id: %d, buf_man id: %d' % \
+        if config.DEBUG:
+            print '=== TxStartEvt: start Tx, time: %f, node id: %d, buf_man id: %d' % \
                 (self._timestamp, self._buf_man._node._id, self._buf_man._id)
-        chunk.show()
+            chunk.show()
 
         next_hop_id = self._buf_man.node().getNextHop(chunk.dst())
         next_hop = self._simu.getNodeById(next_hop_id)
@@ -195,7 +210,11 @@ class TxStartEvt(Event):
         self._buf_man._tx_until = self._timestamp + tx_time
         te_evt = TxEndEvt(self._simu, self._timestamp + tx_time, self._buf_man, buf_id)
         self._simu.enqueue(te_evt)
-        print '=== end TxStartEvt\n'
+
+        if config.DEBUG:
+            print '=== TxStartEvt: scheduled RxStart at {} and TxEnd at {}'.format(
+                    self._timestamp + self._buf_man.latency(), self._timestamp + tx_time)
+            print '=== end TxStartEvt\n'
 
 
 class TxEndEvt(Event): # block_in state change at sender
@@ -206,15 +225,19 @@ class TxEndEvt(Event): # block_in state change at sender
         self._buf_id = buf_id
 
     def execute(self):
-        print '\n=== begin TxEndEvt'
+        if config.DEBUG:
+            print '\n=== begin TxEndEvt'
         chunk = self._buf_man.dequeue(self._buf_id)
         chunk.updateTimestamp(self._timestamp)
-        print 'TxEndEvt: executing, time: %f, node id: %d, buf_man id: %d' % \
+        if config.DEBUG:
+            print 'TxEndEvt: executing, time: %f, node id: %d, buf_man id: %d' % \
                 (self._timestamp, self._buf_man._node._id, self._buf_man._id)
 
         evt = TxStartEvt(self._simu, self._timestamp, self._buf_man)
         self._simu.enqueue(evt)
-        print '=== end TxEndEvt: executing, time: %f, node id: %d, buf_man id: %d\n' % \
+
+        if config.DEBUG:
+            print '=== end TxEndEvt: executing, time: %f, node id: %d, buf_man id: %d\n' % \
                 (self._timestamp, self._buf_man._node._id, self._buf_man._id)
 
 class RxStartEvt(Event): # block_in state change at receiver
@@ -226,11 +249,13 @@ class RxStartEvt(Event): # block_in state change at receiver
         self._tx_time = tx_time
 
     def execute(self):
-        print '\n=== begin RxStartEvt'
+        if config.DEBUG:
+            print '\n=== begin RxStartEvt'
         self._chunk.updateTimestamp(self._timestamp)
 
-        print '=== RxStartEvt: executing, time: %f, node id: %d, chunk: ' % (self._timestamp, self._node.id())
-        self._chunk.show()
+        if config.DEBUG:
+            print '=== RxStartEvt: executing, time: %f, node id: %d, chunk: ' % (self._timestamp, self._node.id())
+            self._chunk.show()
 
         if self._chunk.dst() != self._node.id():
             self._node.receive(self._chunk)
@@ -246,7 +271,9 @@ class RxStartEvt(Event): # block_in state change at receiver
         else:
             evt = FinDeliveryEvt(self._simu, self._timestamp + self._tx_time, self._chunk, self._node)
             self._simu.enqueue(evt)
-        print '=== end RxStartEvt\n'
+
+        if config.DEBUG:
+            print '=== end RxStartEvt\n'
 
 
 class RxEndEvt(Event):
@@ -256,13 +283,16 @@ class RxEndEvt(Event):
         self._node = node
 
     def execute(self):
-        print '\n=== begin RxEndEvt'
+        if config.DEBUG:
+            print '\n=== begin RxEndEvt'
         self._chunk.updateTimestamp(self._timestamp)
         self._chunk.updateCurNode(self._node.id())
         self._chunk.setStatus(Chunk.BEFORE_TX)
-        print '=== RxEvt: executing, time: %f, node id: %d, chunk: ' % (self._timestamp, self._node.id())
-        self._chunk.show()
-        print '=== end RxEndEvt\n'
+
+        if config.DEBUG:
+            print '=== RxEvt: executing, time: %f, node id: %d, chunk: ' % (self._timestamp, self._node.id())
+            self._chunk.show()
+            print '=== end RxEndEvt\n'
 
 class FinDeliveryEvt(Event):
     def __init__(self, simu, timestamp, chunk, node):
@@ -270,13 +300,15 @@ class FinDeliveryEvt(Event):
         self._chunk = chunk
         self._node = node
     def execute(self):
-        print '\n=== begin FinDeliveryEvt'
+        if config.DEBUG: print '\n=== begin FinDeliveryEvt'
         self._chunk.updateTimestamp(self._timestamp)
         self._chunk.setStatus(Chunk.BEFORE_TX)
         self._node.finish(self._chunk)
-        print '=== FinDeliveryEvt: executing, time: %f, node id: %d, chunk: ' % (self._timestamp, self._node.id())
-        self._chunk.show()
-        print '=== end FinDeliveryEvt\n'
+
+        if config.DEBUG:
+            print '=== FinDeliveryEvt: executing, time: %f, node id: %d, chunk: ' % (self._timestamp, self._node.id())
+            self._chunk.show()
+            print '=== end FinDeliveryEvt\n'
 
 
 class ECNMsgEvt(Event):
@@ -286,7 +318,7 @@ class ECNMsgEvt(Event):
         self._chunk = chunk
 
     def execute(self):
-        print '\n=== begin ECNMsgEvt'
+        if config.DEBUG: print '\n=== begin ECNMsgEvt'
         self._buf_man._queue_man.doECN(self._chunk)
-        print '\n=== end ECNMsgEvt'
+        if config.DEBUG: print '\n=== end ECNMsgEvt'
 

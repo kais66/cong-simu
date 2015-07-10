@@ -22,7 +22,9 @@ class BuilderFactory(object):
 class BaseBufManBuilder(object):
     #band = 131072.0 # unit: byte per ms, == 1Gbps
     band = 6750.0 # byte per ms, == 54 Mbps
-    lat = 5.0 # ms
+
+    #lat = 5.0 # ms, 5ms latency cause throughput degradation with Pareto
+    lat = 1.0
 
     def __init__(self, config):
         self.config = config

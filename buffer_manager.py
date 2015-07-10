@@ -155,11 +155,11 @@ class LinkBufferManager(BaseBufferManager):
     def bandwidth(self):
         return self._band
 
-    def schedInterval(self, chunk=None):
-        if chunk is None:
-            return self._intv
-        else:
-            return chunk.size()/self._band 
+    def schedInterval(self, chunk):
+        #assert chunk is None:
+            #return self._intv
+
+        return chunk.size()/self._band
          
     def schedBuffer(self): 
         ''' 

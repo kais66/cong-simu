@@ -4,7 +4,8 @@ import process_trace
 from .. import demand
 
 # this rate list should be kept in sync with the one in the shell scripts
-rates = ["0.5", "0.7", "0.9", "1.1", "1.3", "1.5", "2.0", "3.0"]
+#rates = ["0.5", "0.7", "0.9", "1.1", "1.3", "1.5", "2.0", "3.0"]
+rates = ["0.5", "0.7", "0.9", "1.1", "1.3", "1.5", "2.0"]
 #rates = ['1.0']
 trace_base_path = '/Users/SunnySky/workspace/cong-simu/output/'
 
@@ -48,6 +49,7 @@ class ThroughputPlot(object):
         #plt.plot(offered, thru[0], '-1', linewidth=4)
         labelPlot('Offered load (MB/s)', 'Throughput (MB/s)', '')
         plt.show()
+        plt.savefig('offered.png')
 
 
 

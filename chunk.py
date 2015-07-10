@@ -26,7 +26,7 @@ class Chunk:
         self._start_offset = start_offset
         self._end_offset = end_offset
         self._file_size = file_size
-        print 'file size: {}'.format(file_size)
+        #print 'file size: {}'.format(file_size)
 
         self._file_id = self._chk_id - self._start_offset
 
