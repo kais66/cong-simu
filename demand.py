@@ -24,11 +24,12 @@ class ArrivalTrace(object):
         self.end_msec = 100000.0
 
         # 50KB, value taken from "FlowCompletionTime" paper
-        # make sure the mean file size is a multiple of 1000
-        self.mean_file_size = 1000000
+        # make sure the mean file size is a multiple of 1000B
+        self.mean_file_size = 50000
         # if a file of size greater than the chunk size, it will be segmented
         #self.max_chk_size_bytes = 1048576
-        self.max_chk_size_bytes = 1000000
+
+        self.max_chk_size_bytes = 50000 # 50KB chunk
 
         # change to a different Demand object to use another traffic demand profile
         demand_initializer = DemandSmallEqual(self.rate_bytepms)
