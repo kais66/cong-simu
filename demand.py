@@ -32,7 +32,8 @@ class ArrivalTrace(object):
         self.max_chk_size_bytes = 50000 # 50KB chunk
 
         # change to a different Demand object to use another traffic demand profile
-        demand_initializer = DemandSmallEqual(self.rate_bytepms)
+        #demand_initializer = DemandSmallEqual(self.rate_bytepms)
+        demand_initializer = DemandSmallSkewed(self.rate_bytepms)
         self.demand_list = demand_initializer.demandList()
 
         # list of file arrivals
