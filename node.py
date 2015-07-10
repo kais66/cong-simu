@@ -150,11 +150,13 @@ class TrafficSink:
         file = self._file_dict[file_id]
         file.insertChk(chunk)
         if file.isComplete():
-            stat_list = [chunk.fileId(), chunk.startTimestamp(),
-                    chunk.timestamp(), chunk.timestamp()-chunk.startTimestamp(),
-                    chunk.src(), chunk.dst(), chunk._file_size]
             print 'finish file size: {}'.format(chunk._file_size)
-            self._logger.log(stat_list)
+            for thisChk in file._chk_dict.values():
+                stat_list = [thisChk.id(), chunk.startTimestamp(),
+                    thisChk.timestamp(), thisChk.timestamp()-thisChk.startTimestamp(),
+                    chunk.src(), chunk.dst(), chunk._file_size, thisChk.size()]
+
+                self._logger.log(stat_list)
 
     def logToFile(self):
         self._logger.write()

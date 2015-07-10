@@ -1,6 +1,6 @@
 import json
 import sys
-DEBUG = False
+DEBUG = True
 
 class Config(object):
     def __init__(self, json_path, cmd_line_argv):

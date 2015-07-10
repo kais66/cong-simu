@@ -1,5 +1,5 @@
-base_name = 'respTimes_PerIfWithECN_'
-rate_str = '12000'
+base_name = 'respTimes_PerIf_'
+rate_str = '1.3'
 f = open('output/{}{}.csv'.format(base_name, rate_str), 'r')
 data = []
 for line in f:

@@ -5,7 +5,7 @@ from .. import demand
 
 # this rate list should be kept in sync with the one in the shell scripts
 #rates = ["0.5", "0.7", "0.9", "1.1", "1.3", "1.5", "2.0", "3.0"]
-rates = ["0.5", "0.7", "0.9", "1.1", "1.3", "1.5", "2.0"]
+rates = ["0.5", "0.7", "0.9", "1.1"]
 #rates = ['1.0']
 trace_base_path = '/Users/SunnySky/workspace/cong-simu/output/'
 
@@ -48,6 +48,7 @@ class ThroughputPlot(object):
             plt.plot(offered, thru[exp_pos], '-D', linewidth=4, label=experiment_list[exp_pos])
         #plt.plot(offered, thru[0], '-1', linewidth=4)
         labelPlot('Offered load (MB/s)', 'Throughput (MB/s)', '')
+        plt.axis([0, 16, 0, 14])
         plt.show()
         plt.savefig('offered.png')
 
@@ -64,6 +65,7 @@ class ThroughputData(object):
     SRC_POS = 4
     DST_POS = 5
     FILESIZE_POS = 6
+    CHKSIZE_POS = 7
 
     def __init__(self, file_path):
         # numpy 2-d array
@@ -75,6 +77,7 @@ class ThroughputData(object):
     def overallThroughput(self, np_array=None):
         if np_array is None:
             np_array = self.array
+        #total_bytes = np.sum(np_array, axis=0)[ThroughputData.CHKSIZE_POS]
         total_bytes = np.sum(np_array, axis=0)[ThroughputData.FILESIZE_POS]
         thru_mbyteps = float(total_bytes) / 1048576 / (ThroughputData.SIMU_LENG / 1000)
         return thru_mbyteps
