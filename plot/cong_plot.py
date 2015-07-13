@@ -22,9 +22,9 @@ class ThroughputPlot(object):
         #traff_demand = demand.DemandSmallEqual()
 
         traff_demand = demand.DemandSmallSkewed()
-        self.thruVsOffered(exp_list, traff_demand)
+        self.plot(exp_list, traff_demand)
 
-    def thruVsOffered(self, experiment_list, traffic_demand):
+    def plot(self, experiment_list, traffic_demand):
         '''
         :param experiment_list: a list of experiment strings, such as PerIf,
         PerFlow, PerIfWithECN
@@ -58,7 +58,78 @@ class ThroughputPlot(object):
         plt.show()
         plt.savefig('offered.png')
 
+class DstThroughputPlot(object):
+    def __init__(self, rate_str, dst_list):
+        self.rate_str = rate_str
+        self.dst_list = dst_list
+        self.exp_list = ['PerFlow', 'PerIfWithECN' ]
+        self.plot()
 
+    def plot(self):
+        thru = np.zeros((len(self.exp_list), len(self.dst_list)))
+        for exp_pos in xrange(len(self.exp_list)):
+            exp = self.exp_list[exp_pos]
+            file_path = '{}respTimes_{}_{}.csv'.format(trace_base_path,
+                                                       exp, self.rate_str)
+            thru_data = ThroughputData(file_path)
+            for dst_pos in xrange(len(self.dst_list)):
+                dst = self.dst_list[dst_pos]
+                dst_thru = thru_data.dstThroughput(dst)
+                thru[exp_pos][dst_pos] = dst_thru
+                print 'value at pos ({}, {}) is: {}'.format(exp_pos, dst_pos,
+                                                        thru[exp_pos][dst_pos])
+
+        # http://matplotlib.org/examples/pylab_examples/barchart_demo.html
+        n_groups = len(self.dst_list)
+        fig, ax = plt.subplots()
+
+        index = np.arange(n_groups)
+        bar_width = 0.35
+
+        opacity = 0.4
+        error_config = {'ecolor': '0.3'}
+
+        rects1 = plt.bar(index, thru[0], bar_width,
+                         alpha=opacity,
+                         color='b',
+                         error_kw=error_config,
+                         label='PerFlow')
+
+        rects2 = plt.bar(index + bar_width, thru[1], bar_width,
+                         alpha=opacity,
+                         color='r',
+                         error_kw=error_config,
+                         label='PerIfWithECN')
+
+
+
+        legend_str = ['dst: '+ str(dst) for dst in self.dst_list]
+        plt.xticks(index + bar_width, legend_str)
+        labelPlot('', 'Throughput (MB/s)', 'Per dst. throughput')
+        #plt.tight_layout()
+        plt.show()
+
+class PerIfRatePlot(object):
+    def __init__(self, rate_str, src_list, dst_list):
+        self.rate_str = rate_str
+        self.src_list, self.dst_list = src_list, dst_list
+        self.plot()
+
+    def plot(self):
+        file_path = '{}rate_{}.csv'.format(trace_base_path, self.rate_str)
+
+        rate_data = PerIfRateData(file_path)
+        for src in self.src_list:
+            for dst in self.dst_list:
+                data = rate_data.srcDstRate(src, dst)
+                plt.plot(data[:, 0], data[:, 1], linewidth=4, label=str(src)+'-'+str(dst))
+        labelPlot('time (ms)', 'rate', '')
+        plt.show()
+
+
+###############################################################################
+# Class for actually getting the data
+###############################################################################
 
 class ThroughputData(object):
     SIMU_LENG = 100000.0 # 100s
@@ -92,6 +163,45 @@ class ThroughputData(object):
         valid_entries = self.array[self.array[:, ThroughputData.DST_POS] == dst]
         return self.overallThroughput(valid_entries)
 
+class PerIfRateData(object):
+    '''
+    Src rates over time according to ECN adjustments
+    '''
+    SIMU_LENG = 100000.0 # 100s
+
+    SRC_POS = 0
+    DST_POS = 1
+    TIME_POS = 2
+    RATE_POS = 3
+    def __init__(self, file_path):
+        all_data_array = np.array(process_trace.readCSVToFloatMatrix(file_path))
+        # only retain the flows finished before simu length
+        self.array = all_data_array[all_data_array[:, PerIfRateData.TIME_POS]
+                        <= PerIfRateData.SIMU_LENG]
+
+    def srcDstRate(self, src, dst):
+        '''
+        return a numpy array of two rows: times, rates
+        :param src:
+        :param dst:
+        :return:
+        '''
+
+        valid_entries = self.array[
+            self.array[:, PerIfRateData.SRC_POS] == src]
+        valid_entries = valid_entries[
+            valid_entries[:, PerIfRateData.DST_POS] == dst]
+        #print valid_entries
+
+        # stacking two column vectors
+        ret = np.c_[valid_entries[:, PerIfRateData.TIME_POS],
+                        valid_entries[:, PerIfRateData.RATE_POS]]
+        #ret = np.hstack((valid_entries[:, PerIfRateData.SRC_POS],
+        #                valid_entries[:, PerIfRateData.DST_POS]))
+        #ret = ret.transpose()
+        print ret
+        return ret
+
 ###############################################################################
 # Some utility functions for plotting
 ###############################################################################
@@ -102,5 +212,5 @@ def labelPlot(x, y, title):
     legend = plt.legend(loc='lower right', shadow=True, fontsize='x-large')
     #legend = plt.legend(shadow=True, fontsize='x-large')
 
-if __name__ == "__main__":
-    plt = ThroughputPlot()
+#if __name__ == "__main__":
+#    plt = ThroughputPlot()

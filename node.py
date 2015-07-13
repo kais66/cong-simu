@@ -243,8 +243,10 @@ class AppBufferTB(BaseBuffer):
     INITIAL_RATE = 2000.0
     MAX_RATE = 3000.0
     MIN_RATE = 100.0 # 100 KB/s, or 100B/ms
-    # rate increase granularity: increase rate every rate_inc_gran chks
-    RATE_INC_GRAN = 1
+
+    # rate increase granularity: increase rate every rate_inc_gran bytes
+    RATE_INC_GRAN = 1000000 # default to 1MB
+
     # rate increase factor: 0.2 meaning new_rate=prev_rate + INIT_rate*0.2
     RATE_INC_FACTOR = 0.2
 
@@ -252,6 +254,10 @@ class AppBufferTB(BaseBuffer):
         super(AppBufferTB, self).__init__(node, buf_id)
 
         self.rate = AppBufferTB.INITIAL_RATE # unit: byte per millisecond
+        # this is the rate set by the last rate increase. Maintain this
+        # variable so that we only decrease rate once per RATE_INC_GRAN
+        # bytes (but the reduction may be the biggest among all requests).
+        self.last_inc_rate = AppBufferTB.INITIAL_RATE
 
 
         # timestamp (in ms) of last event of dequeue a chunk from appBuf
@@ -262,8 +268,10 @@ class AppBufferTB(BaseBuffer):
         self.simu = simu
         self.config = self.simu._config
 
-        # incremented by 1 for every chk sent; reset to 0 if multiple of rate_inc_gran
+        # incremented by num_bytes for every chk sent; reset to 0 if multiple of rate_inc_gran
         self.sent_count = 0
+        self.wind_last_chk = collections.deque()
+
 
         # init logger for inst. sending rates
         self.rate_logger = self.simu.rateLogger()
@@ -291,13 +299,14 @@ class AppBufferTB(BaseBuffer):
         #assert self.last_token + time_passed * self.rate >= chunk.size()
 
 
-        self.sent_count += 1
+        self.sent_count += chunk.size()
         self.last_time = self.simu.time()
         self.last_token += (time_passed * self.rate - chunk.size())
 
-        if self.sent_count % AppBufferTB.RATE_INC_GRAN == 0:
-            self.sent_count = 0
+        if self.sent_count >= AppBufferTB.RATE_INC_GRAN == 0:
+            self.sent_count -= AppBufferTB.RATE_INC_GRAN
             self.__additiveIncRate()
+            self.last_inc_rate = self.rate
         return chunk
 
 

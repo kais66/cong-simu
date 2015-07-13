@@ -112,7 +112,8 @@ class QueueManagerTB(BaseQueueManager):
 
         occupancy_percent = self._buf_man.occupancyPercent()
 
-        new_rate = self._rate_adaptor.newRate(src_buf.rate, occupancy_percent)
+        #new_rate = self._rate_adaptor.newRate(src_buf.rate, occupancy_percent)
+        new_rate = self._rate_adaptor.newRate(src_buf.last_inc_rate, occupancy_percent)
         src_buf.setRate(new_rate)
 
 class BaseRateAdaptor(object):
