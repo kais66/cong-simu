@@ -20,7 +20,8 @@ class Simulator(object):
         #self._length = 50000.0
 
         # regular running time
-        self._length = 200000.0 # 200s
+        #self._length = 200000.0 # 200s
+        self._length = 100000.0 # 200s
 
         #self._length = 20000.0
         self._config = config

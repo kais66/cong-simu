@@ -16,7 +16,9 @@ class ThroughputPlot(object):
 
         self.rate_values = [float(entry) for entry in rates]
 
-        exp_list = ['PerFlow', 'PerIf']
+        #exp_list = ['PerFlow', 'PerIf']
+        exp_list = ['PerFlow', 'PerIfWithECN' ]
+
         #traff_demand = demand.DemandSmallEqual()
 
         traff_demand = demand.DemandSmallSkewed()

@@ -49,9 +49,9 @@ class ArrivalTrace(object):
 
         for line in self.demand_list:
             inter_arrival_time_func = NextExponentialInterArrival
-            file_size_func = NextParetoSize
+            #file_size_func = NextParetoSize
             #inter_arrival_time_func = NextDeterministicInterArrival
-            #file_size_func = NextDeterministicSize
+            file_size_func = NextDeterministicSize
 
             this_arr_list = self.genOneSrcDst(line, inter_arrival_time_func, file_size_func)
             self.arrival_list.extend(this_arr_list)
