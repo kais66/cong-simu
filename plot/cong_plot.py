@@ -184,6 +184,15 @@ class PerIfRatePlot(object):
         plt.show()
         #plt.savefig('cong-simu/plot/rate_fig', ext="png", close=True, verbose=True)
 
+class ResponseTimePlot(object):
+    def __init__(self, rate_str):
+        self.rate_str = rate_str
+        self.exp_list = ['PerFlow', 'PerIf', 'PerIfWithECN']
+        self.plot()
+
+    def plot(self):
+        pass
+
 ###############################################################################
 # Class for actually getting the data
 ###############################################################################
@@ -193,7 +202,7 @@ class ThroughputData(object):
 
     def __init__(self, file_path, index=None):
         # based on the positions of entries defined when writing the throughput trace
-        self.FILEID_POS = 0
+        self.CHUNKID_POS = 0
         self.STARTTS_POS = 1
         self.ENDTS_POS = 2
         self.DELAY_POS = 3
@@ -201,6 +210,7 @@ class ThroughputData(object):
         self.DST_POS = 5
         self.FILESIZE_POS = 6
         self.CHKSIZE_POS = 7
+        self.FILEID_POS = 8
 
         if index is not None:
             self.ENDTS_POS = index['ENDTS_POS']
@@ -225,6 +235,16 @@ class ThroughputData(object):
         valid_entries = self.array[self.array[:, self.DST_POS] == dst]
         #if dst==6: print valid_entries.tolist()
         return self.overallThroughput(valid_entries)
+
+    def overallCompletionTime(self, np_array=None):
+        if np_array is None:
+            np_array = self.array
+
+        # because completion time is per file, not per chunk; we need to filter
+        # the array so that each file is considered only once
+
+    def __retainOneChkPerFile(self, np_array):
+        valid_entries = np_array[np_array[:, self.FILEID_POS] == np_array[:, self.CHK]]
 
 class PerIfRateData(object):
     '''

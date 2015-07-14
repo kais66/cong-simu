@@ -154,7 +154,8 @@ class TrafficSink:
             for thisChk in file._chk_dict.values():
                 stat_list = [thisChk.id(), chunk.startTimestamp(),
                     thisChk.timestamp(), thisChk.timestamp()-thisChk.startTimestamp(),
-                    chunk.src(), chunk.dst(), chunk._file_size, thisChk.size()]
+                    chunk.src(), chunk.dst(), chunk._file_size, thisChk.size(),
+                    thisChk.fileId()]
 
                 self._logger.log(stat_list)
 
