@@ -20,8 +20,8 @@ class ThroughputPlot(object):
 
         self.rate_values = [float(entry) for entry in rates]
 
-        #exp_list = ['PerFlow', 'PerIf']
-        exp_list = ['PerFlow', 'PerIfWithECN' ]
+        exp_list = ['PerFlow', 'PerIf', 'PerIfWithECN']
+        #exp_list = ['PerFlow', 'PerIfWithECN' ]
 
         #traff_demand = demand.DemandSmallEqual()
 
@@ -66,7 +66,8 @@ class DstThroughputPlot(object):
     def __init__(self, rate_str, dst_list):
         self.rate_str = rate_str
         self.dst_list = dst_list
-        self.exp_list = ['PerFlow', 'PerIfWithECN' ]
+        #self.exp_list = ['PerFlow', 'PerIfWithECN' ]
+        self.exp_list = ['PerFlow', 'PerIf', 'PerIfWithECN']
         self.plot()
 
     def plot(self):
@@ -88,22 +89,26 @@ class DstThroughputPlot(object):
         fig, ax = plt.subplots()
 
         index = np.arange(n_groups)
-        bar_width = 0.35
+        bar_width = 0.26
 
         opacity = 0.4
         error_config = {'ecolor': '0.3'}
 
-        rects1 = plt.bar(index, thru[0], bar_width,
+        for exp_pos in xrange(len(self.exp_list)):
+            num_shift = exp_pos
+            plt.bar(index + num_shift*bar_width, thru[exp_pos], bar_width,
                          alpha=opacity,
-                         color='b',
+                         color=color_iter.next(),
+                         edgecolor='k',
+                         linewidth=3,
                          error_kw=error_config,
-                         label='PerFlow')
+                         label=self.exp_list[exp_pos])
 
-        rects2 = plt.bar(index + bar_width, thru[1], bar_width,
-                         alpha=opacity,
-                         color='r',
-                         error_kw=error_config,
-                         label='PerIfWithECN')
+        # rects2 = plt.bar(index + bar_width, thru[1], bar_width,
+        #                  alpha=opacity,
+        #                  color='r',
+        #                  error_kw=error_config,
+        #                  label='PerIfWithECN')
 
 
 
@@ -114,6 +119,10 @@ class DstThroughputPlot(object):
         plt.show()
 
 class TraffInputPlot(object):
+    '''
+    used to visualize the actual offered load generated,
+    from the traff input files.
+    '''
     def __init__(self, rate_str, dst_list):
         self.rate_str = rate_str
         self.dst_list = dst_list
@@ -270,12 +279,10 @@ def labelPlot(x, y, title, legend_loc=None):
 #marker_list = itertools.cycle((',', '+', '.', 'o', '*'))
 marker_list = [marker for marker in Line2D.markers if marker != ' ']
 marker_iter = itertools.cycle(marker_list)
-def nextMarker():
-    index = 0
-    while index < len(marker_list):
-        yield marker_list[index]
-        if index == len(marker_list) - 1:
-            index = 0
+
+# http://matplotlib.org/examples/color/named_colors.html
+color_list = ['deepskyblue', 'royalblue', 'lawngreen', 'lightcoral', 'orange']
+color_iter = iter(color_list)
 
 
 
