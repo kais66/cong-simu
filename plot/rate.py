@@ -1,7 +1,15 @@
+import sys
 from cong_plot import *
 
+rate_list = ["0.5", "0.7", "0.9", "1.1", "1.3", "1.5", "1.7", "2.0"]
 if __name__ == "__main__":
     src_list = [1, 2]
     dst_list = [6, 7, 8, 9]
-    rate_str = '1.5'
+
+    rate_set = set(rate_list)
+    num_arg = len(sys.argv)
+    rate_str = sys.argv[1]
+    if num_arg != 2 or rate_str not in rate_set:
+        print 'error in arguments'
+
     plt = PerIfRatePlot(rate_str, src_list, dst_list)

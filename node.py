@@ -303,7 +303,7 @@ class AppBufferTB(BaseBuffer):
         self.last_time = self.simu.time()
         self.last_token += (time_passed * self.rate - chunk.size())
 
-        if self.sent_count >= AppBufferTB.RATE_INC_GRAN == 0:
+        if self.sent_count >= AppBufferTB.RATE_INC_GRAN:
             self.sent_count -= AppBufferTB.RATE_INC_GRAN
             self.__additiveIncRate()
             self.last_inc_rate = self.rate

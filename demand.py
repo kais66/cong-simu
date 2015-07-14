@@ -107,6 +107,7 @@ class ArrivalTrace(object):
 
         arrival_list = []
         cur_time = self.start_msec
+        random.seed()
         while cur_time < self.end_msec:
             file_size = file_size_func(self.mean_file_size)
             arrival_list.append([src, dst, cur_time, file_size])
@@ -237,7 +238,7 @@ def NextParetoSize(mean):
     sigma = (alpha - 1) * mean / alpha
     size = int(math.ceil(pareto.rvs(alpha, 0, sigma)))
     if size == 0:
-        return NextParetoSize(mean)
+        return 1
     return size
 
 def NextDeterministicSize(mean):

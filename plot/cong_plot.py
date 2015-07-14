@@ -2,12 +2,16 @@ import numpy as np
 import matplotlib.pyplot as plt
 import process_trace
 from .. import demand
+from matplotlib.lines import Line2D
+# to generate an iterator for line markers
+import itertools
 
 # this rate list should be kept in sync with the one in the shell scripts
 #rates = ["0.5", "0.7", "0.9", "1.1", "1.3", "1.5", "2.0", "3.0"]
 
 # rates for small skewed traffic
-rates = ["0.5", "0.7", "0.9", "1.1", "1.3", "1.5", "1.7"]
+rates = ["0.5", "0.7", "0.9", "1.1", "1.3", "1.5", "1.7", "2.0"]
+#
 
 trace_base_path = '/Users/SunnySky/workspace/cong-simu/output/'
 
@@ -52,11 +56,11 @@ class ThroughputPlot(object):
         # now plot
         for exp_pos in xrange(len(experiment_list)):
             plt.plot(offered, thru[exp_pos], '-D', linewidth=4, label=experiment_list[exp_pos])
-        #plt.plot(offered, thru[0], '-1', linewidth=4)
+
         labelPlot('Offered load (MB/s)', 'Throughput (MB/s)', '')
         #plt.axis([0, 16, 0, 14])
-        plt.show()
-        plt.savefig('offered.png')
+        #plt.show()
+        plt.savefig('cong-simu/plot/offered')
 
 class DstThroughputPlot(object):
     def __init__(self, rate_str, dst_list):
@@ -109,6 +113,48 @@ class DstThroughputPlot(object):
         #plt.tight_layout()
         plt.show()
 
+class TraffInputPlot(object):
+    def __init__(self, rate_str, dst_list):
+        self.rate_str = rate_str
+        self.dst_list = dst_list
+        self.plot()
+
+    def plot(self):
+
+        file_path = '{}{}.txt'.format(
+                '/Users/SunnySky/workspace/cong-simu/input_files/traff_poisson_',
+                self.rate_str)
+
+
+        index = { 'ENDTS_POS':3, 'DST_POS':1, 'CHKSIZE_POS':2}
+        thru_data = ThroughputData(file_path, index)
+        thru = np.zeros((1, len(self.dst_list)))
+        for dst_pos in xrange(len(self.dst_list)):
+            dst = self.dst_list[dst_pos]
+            dst_thru = thru_data.dstThroughput(dst)
+            thru[0][dst_pos] = dst_thru
+            print 'value at pos ({}) is: {}'.format(dst_pos,
+                                                    thru[0][dst_pos])
+
+        n_groups = len(self.dst_list)
+        fig, ax = plt.subplots()
+
+        index = np.arange(n_groups)
+        bar_width = 0.35
+
+        opacity = 0.4
+        error_config = {'ecolor': '0.3'}
+        rects1 = plt.bar(index, thru[0], bar_width,
+                 alpha=opacity,
+                 color='b',
+                 error_kw=error_config,
+                 label='PerFlow')
+        legend_str = ['dst: '+ str(dst) for dst in self.dst_list]
+        plt.xticks(index + bar_width, legend_str)
+        labelPlot('', 'Throughput (MB/s)', 'Per dst. offered load')
+        #plt.tight_layout()
+        plt.show()
+
 class PerIfRatePlot(object):
     def __init__(self, rate_str, src_list, dst_list):
         self.rate_str = rate_str
@@ -122,10 +168,12 @@ class PerIfRatePlot(object):
         for src in self.src_list:
             for dst in self.dst_list:
                 data = rate_data.srcDstRate(src, dst)
-                plt.plot(data[:, 0], data[:, 1], linewidth=4, label=str(src)+'-'+str(dst))
-        labelPlot('time (ms)', 'rate', '')
+                plt.plot(data[:, 0], data[:, 1], marker=marker_iter.next(),
+                         markersize=10,
+                         linewidth=2, label=str(src)+'-'+str(dst))
+        labelPlot('time (ms)', 'rate', '', 'lower left')
         plt.show()
-
+        #plt.savefig('cong-simu/plot/rate_fig', ext="png", close=True, verbose=True)
 
 ###############################################################################
 # Class for actually getting the data
@@ -134,33 +182,39 @@ class PerIfRatePlot(object):
 class ThroughputData(object):
     SIMU_LENG = 100000.0 # 100s
 
-    # based on the positions of entries defined when writing the throughput trace
-    FILEID_POS = 0
-    STARTTS_POS = 1
-    ENDTS_POS = 2
-    DELAY_POS = 3
-    SRC_POS = 4
-    DST_POS = 5
-    FILESIZE_POS = 6
-    CHKSIZE_POS = 7
+    def __init__(self, file_path, index=None):
+        # based on the positions of entries defined when writing the throughput trace
+        self.FILEID_POS = 0
+        self.STARTTS_POS = 1
+        self.ENDTS_POS = 2
+        self.DELAY_POS = 3
+        self.SRC_POS = 4
+        self.DST_POS = 5
+        self.FILESIZE_POS = 6
+        self.CHKSIZE_POS = 7
 
-    def __init__(self, file_path):
+        if index is not None:
+            self.ENDTS_POS = index['ENDTS_POS']
+            self.DST_POS = index['DST_POS']
+            self.CHKSIZE_POS = index['CHKSIZE_POS']
+
         # numpy 2-d array
         all_data_array = np.array(process_trace.readCSVToFloatMatrix(file_path))
         # only retain the flows finished before simu length
-        self.array = all_data_array[all_data_array[:, ThroughputData.ENDTS_POS]
+        self.array = all_data_array[all_data_array[:, self.ENDTS_POS]
                         <= ThroughputData.SIMU_LENG]
 
     def overallThroughput(self, np_array=None):
         if np_array is None:
             np_array = self.array
-        total_bytes = np.sum(np_array, axis=0)[ThroughputData.CHKSIZE_POS]
+        total_bytes = np.sum(np_array, axis=0)[self.CHKSIZE_POS]
         #total_bytes = np.sum(np_array, axis=0)[ThroughputData.FILESIZE_POS]
         thru_mbyteps = float(total_bytes) / 1048576 / (ThroughputData.SIMU_LENG / 1000)
         return thru_mbyteps
 
     def dstThroughput(self, dst):
-        valid_entries = self.array[self.array[:, ThroughputData.DST_POS] == dst]
+        valid_entries = self.array[self.array[:, self.DST_POS] == dst]
+        #if dst==6: print valid_entries.tolist()
         return self.overallThroughput(valid_entries)
 
 class PerIfRateData(object):
@@ -199,18 +253,31 @@ class PerIfRateData(object):
         #ret = np.hstack((valid_entries[:, PerIfRateData.SRC_POS],
         #                valid_entries[:, PerIfRateData.DST_POS]))
         #ret = ret.transpose()
-        print ret
+        #print ret
         return ret
 
 ###############################################################################
 # Some utility functions for plotting
 ###############################################################################
-def labelPlot(x, y, title):
+def labelPlot(x, y, title, legend_loc=None):
     plt.xlabel(x)
     plt.ylabel(y)
     plt.title(title)
-    legend = plt.legend(loc='lower right', shadow=True, fontsize='x-large')
+    if legend_loc is None: legend_loc = 'lower right'
+    legend = plt.legend(loc=legend_loc, shadow=True, fontsize='x-large')
     #legend = plt.legend(shadow=True, fontsize='x-large')
+
+#marker_list = itertools.cycle((',', '+', '.', 'o', '*'))
+marker_list = [marker for marker in Line2D.markers if marker != ' ']
+marker_iter = itertools.cycle(marker_list)
+def nextMarker():
+    index = 0
+    while index < len(marker_list):
+        yield marker_list[index]
+        if index == len(marker_list) - 1:
+            index = 0
+
+
 
 #if __name__ == "__main__":
 #    plt = ThroughputPlot()
