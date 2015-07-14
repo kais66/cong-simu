@@ -26,6 +26,7 @@ class ArrivalTrace(object):
         # 50KB, value taken from "FlowCompletionTime" paper
         # make sure the mean file size is a multiple of 1000B
         self.mean_file_size = 50000
+
         # if a file of size greater than the chunk size, it will be segmented
         #self.max_chk_size_bytes = 1048576
 
@@ -49,9 +50,9 @@ class ArrivalTrace(object):
 
         for line in self.demand_list:
             inter_arrival_time_func = NextExponentialInterArrival
-            #file_size_func = NextParetoSize
+            file_size_func = NextParetoSize
             #inter_arrival_time_func = NextDeterministicInterArrival
-            file_size_func = NextDeterministicSize
+            #file_size_func = NextDeterministicSize
 
             this_arr_list = self.genOneSrcDst(line, inter_arrival_time_func, file_size_func)
             self.arrival_list.extend(this_arr_list)
