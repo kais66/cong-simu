@@ -48,7 +48,7 @@ class Simulator(object):
         self._logger_list.append(self._logger)
 
         # rate logger, only for Token Bucket based AppBuf, in PerIf experiment
-        if self._config.exp_type == 'PerIf':
+        if self._config.exp_type == 'PerIf' and self._config.use_ECN:
             self._rate_logger = OutputLogger('output/rate_{}.csv'.format(self._rate_str))
             self._logger_list.append(self._rate_logger)
 
