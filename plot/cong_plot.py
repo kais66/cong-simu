@@ -12,6 +12,8 @@ import itertools
 # rates for small skewed traffic
 rates = ["0.5", "0.7", "0.9", "1.1", "1.3", "1.5", "1.7", "2.0"]
 #
+traff_demand = demand.DemandSmallSkewed()
+offered = {rate : str(traff_demand.offeredLoad(float(rate))) for rate in rates}
 
 trace_base_path = '/Users/SunnySky/workspace/cong-simu/output/'
 
@@ -114,9 +116,17 @@ class DstThroughputPlot(object):
 
         legend_str = ['dst: '+ str(dst) for dst in self.dst_list]
         plt.xticks(index + bar_width, legend_str)
-        labelPlot('', 'Throughput (MB/s)', 'Per dst. throughput')
+        offered_load = offered[self.rate_str]
+
+        labelPlot('', 'Throughput (MB/s)', 'Offered load ' + offered_load)
         #plt.tight_layout()
-        plt.show()
+        #plt.show()
+
+
+        file_format = 'png'
+        save_path = 'cong-simu/plot/figure/perDstThru_{}.{}'.format(
+            offered_load, file_format)
+        plt.savefig(save_path)
 
 class TraffInputPlot(object):
     '''
@@ -185,13 +195,64 @@ class PerIfRatePlot(object):
         #plt.savefig('cong-simu/plot/rate_fig', ext="png", close=True, verbose=True)
 
 class ResponseTimePlot(object):
-    def __init__(self, rate_str):
-        self.rate_str = rate_str
+    '''
+    for a sinlge rate, plot boxplot of resp times for each experiment
+    '''
+    def __init__(self):
+        self.rates = ["0.5", "0.7", "0.9", "1.1", "1.3", "1.5", "1.7", "2.0"]
         self.exp_list = ['PerFlow', 'PerIf', 'PerIfWithECN']
+
+        traff_demand = demand.DemandSmallSkewed()
+        self.rate_values = [float(entry) for entry in self.rates]
+        self.offered = np.array([traff_demand.offeredLoad(rate) for rate in self.rate_values])
+
         self.plot()
 
+    #http://stackoverflow.com/questions/16592222/matplotlib-group-boxplots
     def plot(self):
-        pass
+        ax = plt.axes()
+        #fig = plt.figure()
+        plt.hold(True)
+        whisker = [5, 95] # let whiskers show 5th and 95th percentile
+
+        num_rates, num_exp = len(self.rates), len(self.exp_list)
+
+        for rate_pos in xrange(num_rates):
+            rate = self.rates[rate_pos]
+            time_data = []
+            for exp_pos in xrange(num_exp):
+                exp = self.exp_list[exp_pos]
+                file_path = '{}respTimes_{}_{}.csv'.format(trace_base_path,
+                                                           exp, rate)
+                thru_data = ThroughputData(file_path)
+
+                # this should be the way to build a numpy array row by row
+                # because each concatenation in numpy is a copy
+                # not like what's in python list.
+                this_time_data = thru_data.allCompletionTime()#.tolist()
+                time_data.append(this_time_data)
+
+
+            plt.boxplot(time_data, positions=[2+ rate_pos*4+i for i in xrange(num_exp)])
+                        #widths=0.6)
+
+            #plt.boxplot(time_data, labels=(exp,))
+        #np_data = np.array(time_data)
+        #print np.shape(np_data)
+
+
+        #plt.boxplot(time_data, whis=whisker, labels=self.exp_list)
+        #plt.boxplot(time_data, sym=None, labels=self.exp_list)
+
+        ax.set_xticklabels([str(entry) for entry in self.offered])
+        ax.set_xticks([3 + i*4 for i in xrange(len(self.rates))])
+
+        # 1 unit white space on the left and right edge
+        # and 1 unit white space in-between two rates
+        plt.xlim(0, 4*len(self.rates) +2 )
+        labelPlot('offered load (MB/s)', 'Response time (ms)','')
+
+        plt.show()
 
 ###############################################################################
 # Class for actually getting the data
@@ -236,15 +297,20 @@ class ThroughputData(object):
         #if dst==6: print valid_entries.tolist()
         return self.overallThroughput(valid_entries)
 
-    def overallCompletionTime(self, np_array=None):
+    def allCompletionTime(self, np_array=None):
         if np_array is None:
             np_array = self.array
 
         # because completion time is per file, not per chunk; we need to filter
         # the array so that each file is considered only once
+        valid_entries = self.__retainOneChkPerFile(np_array)
+        return valid_entries[:, self.DELAY_POS]
+        #total_time = np.sum(valid_entries, axis=0)[self.DELAY_POS]
+
 
     def __retainOneChkPerFile(self, np_array):
-        valid_entries = np_array[np_array[:, self.FILEID_POS] == np_array[:, self.CHK]]
+        valid_entries = np_array[np_array[:, self.FILEID_POS] == np_array[:, self.CHUNKID_POS]]
+        return valid_entries
 
 class PerIfRateData(object):
     '''
