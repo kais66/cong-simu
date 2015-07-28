@@ -58,7 +58,8 @@ class Simulator(object):
     def loadInput(self):
         ''' cong_str: 'PerFlow' or 'PerIf'; rate_str: integer between 3000 and 10000. '''
         print 'simulator:loadInput'
-        tp = TopoGenerator('topo_files/topo_9nodes.txt')
+        #tp = TopoGenerator('topo_files/topo_9nodes.txt')
+        tp = TopoGenerator('topo_files/abilene.topo')
 
         fac = BuilderFactory(self._config)
         builder = fac.getBuilder()
