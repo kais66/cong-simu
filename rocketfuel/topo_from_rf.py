@@ -1,3 +1,4 @@
+#!/usr/bin/python
 ###############################################################################
 # Given Intra.txt, Rocketfuel intra AS topologies, and an AS number, output
 # the nodes, and the links (topology)
@@ -49,10 +50,11 @@ class ASTopoParser(object):
             if node_str not in self.node_dic:
                 self.node_dic[node_str] = node_id
                 node_id += 1
-        print 'num nodes: {}'.format(len(self.node_dic))
+        #print 'num nodes: {}'.format(len(self.node_dic))
 
         node_list = self.node_dic.keys()
         node_list.sort()
+
         for node in node_list:
             print node
 
@@ -69,19 +71,22 @@ class ASTopoParser(object):
                 if other_id not in nbr_set:
                     nbr_set.add(other_id)
 
-        for id in self.topo:
-            print 'nbrs of node: {}'.format(id)
-            print self.topo[id]
+        # for id in self.topo:
+        #     print 'nbrs of node: {}'.format(id)
+        #     print self.topo[id]
 
-    def outputTopoRaw(self):
+    def outputTopoRaw(self, as_name):
         '''
         generate the topology file, for raw sprint topo, i.e. without access
         trees.
         :return:
         '''
-        output_path = '../topo_files/topo_sprint_raw.txt'
+        output_path = '../topo_files/{}.topo'.format(as_name)
+
         with open(output_path, 'w') as f:
-            for node, nbr_set in self.node_dic:
+            for node, nbr_set in self.topo.iteritems():
+                #print node
+                #print nbr_set
                 assert len(nbr_set) > 0
                 line_words = [node, len(nbr_set)]
                 for nbr in nbr_set:
@@ -92,6 +97,8 @@ class ASTopoParser(object):
 
 
 if __name__ == '__main__':
-    ps = ASTopoParser(1239)
-    ps.outputTopoRaw()
+    #as_number, as_name = 1239, 'sprint_raw'
+    as_number, as_name = 11537, 'abilene'
+    ps = ASTopoParser(as_number)
+    ps.outputTopoRaw(as_name)
     #ps = ASTopoParser(701)
