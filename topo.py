@@ -34,6 +34,13 @@ class BaseBufManBuilder(object):
         pass
 
     def genObservers(self, simu, topo):
+        '''
+        A public function. Called by Simulator to initialize buffers, buf_man,
+        and backpressure subjects and observers.
+        :param simu:
+        :param topo:
+        :return:
+        '''
         pass
 
 class BufManBuilderPerFlow(BaseBufManBuilder):
@@ -62,12 +69,15 @@ class BufManBuilderPerFlow(BaseBufManBuilder):
                 self.attachObserver(simu.nodesDic()[next_hop], dst_id, nd)
 
     def attachObserver(self, cur_nd, dst_id, pred_nd):
+
+        # set up pred node's buffer in any case
+        pred_buf = pred_nd.getBufManByDst(dst_id).getBufById(dst_id)
         if cur_nd.id() == dst_id:
             return 
         print 'Builder:attachObs: cur_nd: %d, dst: %d, pred: %d' \
                 % (cur_nd.id(), dst_id, pred_nd.id())
         cur_buf = cur_nd.getBufManByDst(dst_id).getBufById(dst_id)
-        pred_buf = pred_nd.getBufManByDst(dst_id).getBufById(dst_id)
+
         cur_buf.attachCongObserver(pred_buf.congCtrl())
 
 

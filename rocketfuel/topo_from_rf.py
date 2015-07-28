@@ -95,10 +95,12 @@ class ASTopoParser(object):
                 line_words.append('\n')
                 f.write(','.join(line_words))
 
-
+# from rocketfuel paper
+as_dic = {'abilene':11537, 'exodus':3967, 'att':7018, 'level3':3356,
+          'sprint':1239}
 if __name__ == '__main__':
-    #as_number, as_name = 1239, 'sprint_raw'
-    as_number, as_name = 11537, 'abilene'
+    as_name = 'sprint'
+    as_number = as_dic[as_name]
     ps = ASTopoParser(as_number)
     ps.outputTopoRaw(as_name)
     #ps = ASTopoParser(701)
