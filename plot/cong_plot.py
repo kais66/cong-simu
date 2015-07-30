@@ -10,17 +10,23 @@ import itertools
 #rates = ["0.5", "0.7", "0.9", "1.1", "1.3", "1.5", "2.0", "3.0"]
 
 # rates for small skewed traffic
-rates = ["0.5", "0.7", "0.9", "1.1", "1.3", "1.5", "1.7", "2.0"]
+rates_dic = {
+    'small_skewed':["0.5", "0.7", "0.9", "1.1", "1.3", "1.5", "1.7", "2.0"],
+    'small_equal':["0.5", "0.7", "0.9", "1.1", "1.3", "1.5", "2.0", "3.0"],
+    'abilene_equal':["0.45", "0.55"]
+}
+
+
 #
 traff_demand = demand.DemandSmallSkewed()
-offered = {rate : str(traff_demand.offeredLoad(float(rate))) for rate in rates}
+#offered = {rate : str(traff_demand.offeredLoad(float(rate))) for rate in rates}
 
 trace_base_path = '/Users/SunnySky/workspace/cong-simu/output/'
 
 class ThroughputPlot(object):
-    def __init__(self):
-
-        self.rate_values = [float(entry) for entry in rates]
+    def __init__(self, topo_traff_str):
+        self.rates = rates_dic[topo_traff_str]
+        self.rate_values = [float(entry) for entry in self.rates]
 
         exp_list = ['PerFlow', 'PerIf', 'PerIfWithECN']
         #exp_list = ['PerFlow', 'PerIfWithECN' ]
@@ -45,8 +51,8 @@ class ThroughputPlot(object):
         thru = np.zeros((len(experiment_list), len(self.rate_values)))
         for exp_pos in xrange(len(experiment_list)):
             exp = experiment_list[exp_pos]
-            for rate_pos in xrange(len(rates)):
-                rate = rates[rate_pos]
+            for rate_pos in xrange(len(self.rates)):
+                rate = self.rates[rate_pos]
 
                 file_path = '{}respTimes_{}_{}.csv'.format(trace_base_path, exp, rate)
                 print file_path
@@ -198,8 +204,10 @@ class ResponseTimePlot(object):
     '''
     for a sinlge rate, plot boxplot of resp times for each experiment
     '''
-    def __init__(self):
-        self.rates = ["0.5", "0.7", "0.9", "1.1", "1.3", "1.5", "1.7", "2.0"]
+    def __init__(self, topo_traff_str):
+        self.rates = rates_dic[topo_traff_str]
+
+
         self.exp_list = ['PerFlow', 'PerIf', 'PerIfWithECN']
 
         traff_demand = demand.DemandSmallSkewed()

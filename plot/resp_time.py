@@ -11,4 +11,4 @@ if __name__ == "__main__":
 #     if num_arg != 2 or rate_str not in rate_set:
 #         print 'error in arguments'
 
-    plt = ResponseTimePlot()
+    plt = ResponseTimePlot('abilene_equal')
