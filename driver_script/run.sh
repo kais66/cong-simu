@@ -15,6 +15,6 @@ cd ../
 
 output_sink="/dev/null"
 
-for thisRate in "${abilene_equal_rates[@]}"; do
-    python main.py PerIf True Abilene Equal $thisRate > $output_sink 
+for thisRate in "${Small9AllPairEqualRates[@]}"; do
+    python main.py PerIf True Small9 AllPairEqual $thisRate > $output_sink 
 done

@@ -10,6 +10,6 @@ cd ../
 #    python ./demand.py $i
 #done
 
-for thisRate in "${abilene_equal_rates[@]}"; do
-    python ./gen_traffic.py Abilene Equal $thisRate
+for thisRate in "${Small9AllPairEqualRates[@]}"; do
+    python ./gen_traffic.py Small9 AllPairEqual $thisRate
 done

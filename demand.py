@@ -47,6 +47,8 @@ class ArrivalTrace(object):
         elif demand_init_str == 'Small9Skewed':
             demand_initializer = DemandSmallSkewed(self.rate_bytepms)
             #self.topo_str = 'Small9Skewed'
+        elif demand_init_str == 'Small9AllPairEqual':
+            demand_initializer = DemandEqual(self.topo_str, self.rate_bytepms)
         elif demand_init_str == 'AbileneEqual':
             demand_initializer = DemandEqual(self.topo_str, self.rate_bytepms)
             #self.topo_str = 'AbileneEqual'
