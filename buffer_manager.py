@@ -319,6 +319,9 @@ class LinkBufferManagerPerIf(LinkBufferManager):
         #self.addBuffer(self._id)
         self._queue_man = None
 
+        # to get the current number of flows (later can use a bloom filter)
+        self._flow_counter = DictFlowCounter()
+
     def attachQueueMan(self, queue_man):
         self._queue_man = queue_man        
     
@@ -337,6 +340,9 @@ class LinkBufferManagerPerIf(LinkBufferManager):
 
         # bookkeeping related to capacity
         self._cur_byte += chunk.size()
+
+        # bookkeeping ragarding flow counter
+        self._flow_counter.flowSeen(Flow(chunk.src(), chunk.dst()))
 
         node_id = self._node.id()
         #if self._queue_man and chunk.dst() != node_id and chunk.src() != node_id:

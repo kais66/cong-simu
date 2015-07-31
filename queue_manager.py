@@ -86,7 +86,7 @@ class QueueManagerTB(BaseQueueManager):
 
         #self._rate_adaptor = BaseRateAdaptor()
         #self._rate_adaptor = QuadraticRateAdaptor()
-        self._rate_adaptor = FairRateAdaptor()
+        self._rate_adaptor = FairRateAdaptor(self._buf_man)
 
     def doECN(self, chunk):
         '''
@@ -116,11 +116,14 @@ class QueueManagerTB(BaseQueueManager):
 
         #new_rate = self._rate_adaptor.newRate(src_buf.rate, occupancy_percent)
         new_rate = self._rate_adaptor.newRate(src_buf.last_inc_rate,
-                                              occupancy_percent, self._buf_man.bandwidth())
+                                              occupancy_percent)
         if new_rate < src_buf.rate:
             src_buf.setRate(new_rate)
 
 class BaseRateAdaptor(object):
+    def __init__(self, buf_man):
+        self.buf_man = buf_man
+
     def newRate(self, old_rate, occupancy_percent):
         return float(old_rate) / 2
 
@@ -133,8 +136,45 @@ class QuadraticRateAdaptor(BaseRateAdaptor):
         return new_rate
 
 class FairRateAdaptor(BaseRateAdaptor):
-    def newRate(self, old_rate, occupancy_percent, link_capacity):
-        num_flow = 40
-        fair_share = link_capacity / num_flow
+    def newRate(self, old_rate, occupancy_percent):
+        link_capacity = self.buf_man.bandwidth()
+        num_flow = self.buf_man._flow_counter.numFlow()
+        fair_share = link_capacity
+        if num_flow > 0:
+            fair_share = link_capacity / num_flow
         return fair_share
 
+###############################################################################
+# FlowCounter: used to count number of concurrent flows going through a buf_man
+#
+###############################################################################
+class BaseFlowCounter(object):
+    def __init__(self):
+        self.num_flows = 0
+
+    def flowSeen(self, flow):
+        pass
+
+    def numFlow(self):
+        pass
+
+class DictFlowCounter(BaseFlowCounter):
+    def __init__(self):
+        super(DictFlowCounter, self).__init__()
+        self.flow_dict = set()
+
+    def flowSeen(self, flow):
+        key = flow.hashKey()
+        if key not in self.flow_dict:
+            self.flow_dict.add(key)
+
+    def numFlow(self):
+        return len(self.flow_dict)
+
+class Flow(object):
+    def __init__(self, src, dst):
+        self.src, self.dst = src, dst
+        self.key = '{},{}'.format(self.src, self.dst)
+
+    def hashKey(self):
+        return self.key
