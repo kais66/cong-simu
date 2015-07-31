@@ -6,6 +6,7 @@ from cong_ctrl import *
 from log import OutputLogger
 from chunk import Chunk, File
 import math
+import sys
 
 class Node(object):
     ''' Provides the 'node' abstraction. Because we need to simulate two types of 
@@ -246,7 +247,8 @@ class AppBufferTB(BaseBuffer):
     MIN_RATE = 100.0 # 100 KB/s, or 100B/ms
 
     # rate increase granularity: increase rate every rate_inc_gran bytes
-    RATE_INC_GRAN = 1000000 # default to 1MB
+    #RATE_INC_GRAN = 1000000 # default to 1MB
+    RATE_INC_GRAN = 100000 # test with 0.1MB
 
     # rate increase factor: 0.2 meaning new_rate=prev_rate + INIT_rate*0.2
     RATE_INC_FACTOR = 0.2
@@ -320,6 +322,7 @@ class AppBufferTB(BaseBuffer):
 
         # rate reduced
         if new_rate < old_rate:
+            print >> sys.stderr, 'AppBuf.setRate: rate changed from {} to {}'.format(old_rate, new_rate)
 
 
             time_passed = self.simu.time() - self.last_time

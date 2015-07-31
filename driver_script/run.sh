@@ -15,10 +15,10 @@ cd ../
 
 output_sink="/dev/null"
 
-for thisRate in "${abilene_equal_rates[@]}"; do
-    python main.py PerFlow $thisRate false > $output_sink 
-done
-
-#for thisRate in "${rates[@]}"; do
-#    python main.py PerIf $thisRate true > $output_sink &
+#for thisRate in "${abilene_equal_rates[@]}"; do
+#    python main.py PerFlow $thisRate false > $output_sink 
 #done
+
+for thisRate in "${abilene_equal_rates[@]}"; do
+    python main.py PerIf $thisRate true > $output_sink 
+done
