@@ -65,7 +65,7 @@ class ThroughputPlot(object):
         for exp_pos in xrange(len(experiment_list)):
             plt.plot(offered, thru[exp_pos], '-D', linewidth=4, label=experiment_list[exp_pos])
 
-        labelPlot('Offered load (MB/s)', 'Throughput (MB/s)', '')
+        labelPlot('Offered load (MB/s)', 'Throughput (MB/s)', '', 'upper left')
         #plt.axis([0, 16, 0, 14])
         #plt.show()
         plt.savefig('cong-simu/plot/offered')

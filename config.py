@@ -35,7 +35,7 @@ class Config(object):
 
     def initCmdLinePara(self, argv):
         self.cmdline_parser.add_argument('exp_type')
-        self.cmdline_parser.add_argument('use_ECN', type=bool)
+        self.cmdline_parser.add_argument('use_ECN')
 
         self.cmdline_parser.add_argument('topo_str')
         self.cmdline_parser.add_argument('traff_str')
@@ -46,7 +46,10 @@ class Config(object):
         parsed = self.cmdline_parser.parse_args(argv[1:])
 
         self.exp_type = parsed.exp_type
-        self.use_ECN = parsed.use_ECN
+
+        use_ECN = parsed.use_ECN.lower()
+        assert use_ECN == 'true' or use_ECN == 'false'
+        self.use_ECN = use_ECN
 
         self.topo_str = parsed.topo_str
         self.traff_str = parsed.traff_str
