@@ -66,10 +66,13 @@ class Simulator(object):
         self._node_dic = tp.getNodeDic()
         builder.genObservers(self, tp)
 
-        traf_file = 'input_files/traff_poisson_{}.txt'.format(self._rate_str)
-        if not os.path.exists(traf_file):
-            raise IOError("traf_file doesn't exist: {}".format(traf_file))
-        tf = TrafficGenerator(traf_file, self._config)
+        #traf_file = 'input_files/traff_poisson_{}.txt'.format(self._rate_str)
+
+        traff_file = 'input_files/{}/{}_{}.traff'.format(self.topo_str,
+                self.traff_str, self.rate_str)
+        if not os.path.exists(traff_file):
+            raise IOError("traf_file doesn't exist: {}".format(traff_file))
+        tf = TrafficGenerator(traff_file, self._config)
         tf.parseTrafficFile(self._node_dic, self)
 
     def enqueue(self, event):

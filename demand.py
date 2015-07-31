@@ -18,6 +18,9 @@ class ArrivalTrace(object):
         '''
         rate: per (src, dst) base rate in MB/s
         '''
+        self.rate_str = rate_mbyteps_str
+        self.traff_str = traff_str
+
         self.rate_mbyteps = float(rate_mbyteps_str)
         self.rate_bytepms = unit_conv.convertMbytepsecToBytepmsec(self.rate_mbyteps)
 
@@ -135,7 +138,9 @@ class ArrivalTrace(object):
         return arrival_list
 
     def write(self):
-        fname = 'input_files/traff_poisson_' + str(self.rate_mbyteps) + '.txt'
+        #fname = 'input_files/traff_poisson_' + str(self.rate_mbyteps) + '.txt'
+        fname = 'input_files/{}/{}_{}.traff'.format(self.topo_str,
+                self.traff_str, self.rate_str)
         with open(fname, 'w') as f:
             for line in self.chk_arrival_list:
                 f.write(','.join([str(x) for x in line]) + '\n')
