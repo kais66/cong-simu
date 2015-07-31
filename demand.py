@@ -14,7 +14,7 @@ import unit_conv
 class ArrivalTrace(object):
     start_t = 0.0
 
-    def __init__(self, rate_mbyteps_str, demand_init_str):
+    def __init__(self, topo_str, traff_str, rate_mbyteps_str):
         '''
         rate: per (src, dst) base rate in MB/s
         '''
@@ -36,16 +36,17 @@ class ArrivalTrace(object):
         # change to a different Demand object to use another traffic demand profile
         demand_initializer = None
 
-        self.topo_str = None
-        if demand_init_str == 'SmallEqual':
+        self.topo_str = topo_str
+        demand_init_str = topo_str + traff_str
+        if demand_init_str == 'Small9Equal':
             demand_initializer = DemandSmallEqual(self.rate_bytepms)
-            self.topo_str = 'SmallEqual'
-        elif demand_init_str == 'SmallSkewed':
+            #self.topo_str = 'Small9Equal'
+        elif demand_init_str == 'Small9Skewed':
             demand_initializer = DemandSmallSkewed(self.rate_bytepms)
-            self.topo_str = 'SmallSkewed'
+            #self.topo_str = 'Small9Skewed'
         elif demand_init_str == 'AbileneEqual':
-            demand_initializer = DemandEqual('abilene', self.rate_bytepms)
-            self.topo_str = 'AbileneEqual'
+            demand_initializer = DemandEqual(self.topo_str, self.rate_bytepms)
+            #self.topo_str = 'AbileneEqual'
         else:
             print 'error in argument'
             sys.exit()

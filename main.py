@@ -20,10 +20,7 @@ class Simulator(object):
         #self._length = 50000.0
 
         # regular running time
-        #self._length = 200000.0 # 200s
-        self._length = 100000.0 # 200s
-
-        #self._length = 20000.0
+        self._length = 100000.0 # 100s
         self._config = config
 
         self._cong_str = config.exp_type
@@ -57,9 +54,9 @@ class Simulator(object):
 
     def loadInput(self):
         ''' cong_str: 'PerFlow' or 'PerIf'; rate_str: integer between 3000 and 10000. '''
-        print 'simulator:loadInput'
-        #tp = TopoGenerator('topo_files/topo_9nodes.txt')
-        tp = TopoGenerator('topo_files/abilene.topo')
+        topo_file = 'topo_files/{}.topo'.format(self._config.topo_str)
+        print 'simulator:loadInput, using topology: {}'.format(topo_file)
+        tp = TopoGenerator(topo_file)
 
         fac = BuilderFactory(self._config)
         builder = fac.getBuilder()

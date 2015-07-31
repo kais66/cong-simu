@@ -1,4 +1,6 @@
 from demand import *
+import config
+import argparse
 
 if __name__ == "__main__":
     '''
@@ -8,13 +10,17 @@ if __name__ == "__main__":
     demand_init_str: identifies which Demand subclass to use (see demand.py)
     SmallEqual, SmallSkewed, AbileneEqual
     '''
-    if len(sys.argv) != 3:
-        print "usage: python demand.py rate_str demand_init_str"
-        sys.exit(-1)
 
-    # the rate str passed in is in the unit of
-    rate_str = sys.argv[1]
-    demand_init_str = sys.argv[2]
+    cmdline_parser = argparse.ArgumentParser()
+    cmdline_parser.add_argument('topo_str')
+    cmdline_parser.add_argument('traff_str')
+    cmdline_parser.add_argument('rate_str')
 
-    t = ArrivalTrace(rate_str, demand_init_str)
+    parsed = cmdline_parser.parse_args(sys.argv[1:])
+
+    topo_str = parsed.topo_str
+    traff_str = parsed.traff_str
+    rate_str = parsed.rate_str
+
+    t = ArrivalTrace(topo_str, traff_str, rate_str)
     t.generate()

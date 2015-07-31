@@ -11,5 +11,5 @@ cd ../
 #done
 
 for thisRate in "${abilene_equal_rates[@]}"; do
-    python ./gen_traffic.py $thisRate AbileneEqual
+    python ./gen_traffic.py Abilene Equal $thisRate
 done

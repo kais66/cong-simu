@@ -1,6 +1,15 @@
 import json
 import sys
+import argparse
 DEBUG = True
+
+valid_val = {
+    'exp_type':{'PerIf', 'PerFlow'},
+    'topo_str':{'Small9',
+                'Abilene', 'Exodus', 'Att', 'Level3', 'Sprint' # rocketfuel
+                },
+    'traff_str':{'Equal', 'Skewed'}
+}
 
 class Config(object):
     def __init__(self, json_path, cmd_line_argv):
@@ -12,32 +21,48 @@ class Config(object):
             data = json.load(jfile)
 
         self.exp_type = None
-        self.rate_str = None
         self.use_ECN = None
+        self.topo_str = None
+        self.traff_str = None
+        self.rate_str = None
 
+        self.topo_traff_str = None
+
+        self.cmdline_parser = argparse.ArgumentParser()
+        print cmd_line_argv
         self.initCmdLinePara(cmd_line_argv)
         #self.initJsonPara(data)
 
     def initCmdLinePara(self, argv):
-        if len(argv) > 4 or len(argv) < 3:
-            print 'Wrong number of cmd line parameters, exiting'
-            print 'usage: main.py cong_str rate_str [true/false]'
-            sys.exit(-1)
+        self.cmdline_parser.add_argument('exp_type')
+        self.cmdline_parser.add_argument('use_ECN', type=bool)
 
-        self.exp_type = argv[1]
-        self.rate_str = argv[2]
+        self.cmdline_parser.add_argument('topo_str')
+        self.cmdline_parser.add_argument('traff_str')
+        self.cmdline_parser.add_argument('rate_str')
 
-        if len(argv) == 3:
-            self.use_ECN = False
-        else:
-            self.use_ECN = True if argv[3].lower() == 'true' else False
+        # parse_args() takes the list of cmd line arg excluding the program name
+        # as input argument
+        parsed = self.cmdline_parser.parse_args(argv[1:])
+
+        self.exp_type = parsed.exp_type
+        self.use_ECN = parsed.use_ECN
+
+        self.topo_str = parsed.topo_str
+        self.traff_str = parsed.traff_str
+        self.rate_str = parsed.rate_str
 
         print 'exp_type: {}'.format(self.exp_type)
-        print 'rate_str: {}'.format(self.rate_str)
         print 'use_ECN: {}'.format(self.use_ECN)
 
+        print 'topo_str: {}'.format(self.topo_str)
+        print 'traff_str: {}'.format(self.traff_str)
+        print 'rate_str: {}'.format(self.rate_str)
+
+        assert self.exp_type in valid_val['exp_type']
         assert not (self.exp_type == 'PerFlow' and self.use_ECN)
-            
+        assert self.topo_str in valid_val['topo_str']
+
     def initJsonPara(self, json_data):
         global_dict = self.json_data['global']
         if 'experiment_type' in global_dict:
