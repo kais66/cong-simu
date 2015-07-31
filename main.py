@@ -68,8 +68,8 @@ class Simulator(object):
 
         #traf_file = 'input_files/traff_poisson_{}.txt'.format(self._rate_str)
 
-        traff_file = 'input_files/{}/{}_{}.traff'.format(self.topo_str,
-                self.traff_str, self.rate_str)
+        traff_file = 'input_files/{}/{}_{}.traff'.format(self._config.topo_str,
+                self._config.traff_str, self._config.rate_str)
         if not os.path.exists(traff_file):
             raise IOError("traf_file doesn't exist: {}".format(traff_file))
         tf = TrafficGenerator(traff_file, self._config)
