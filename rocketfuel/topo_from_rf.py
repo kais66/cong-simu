@@ -99,7 +99,7 @@ class ASTopoParser(object):
 as_dic = {'Abilene':11537, 'Exodus':3967, 'Att':7018, 'Level3':3356,
           'Sprint':1239}
 if __name__ == '__main__':
-    as_name = 'sprint'
+    as_name = 'Sprint'
     as_number = as_dic[as_name]
     ps = ASTopoParser(as_number)
     ps.outputTopoRaw(as_name)
