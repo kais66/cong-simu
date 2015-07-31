@@ -234,6 +234,7 @@ class DemandEqual(BaseDemand):
         topo_file_path = 'topo_files/{}.topo'.format(self.topo_str)
         with open(topo_file_path, 'r') as f:
             for line in f:
+                if not line or line[0] == '#': continue
                 words = line.split(',')
                 self.src_list.append(int(words[0]))
 
