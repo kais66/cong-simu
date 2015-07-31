@@ -83,8 +83,10 @@ class CongSrcQueueManager(BaseQueueManager):
 class QueueManagerTB(BaseQueueManager):
     def __init__(self, buf_man, simu):
         super(QueueManagerTB, self).__init__(buf_man, simu)
+
         #self._rate_adaptor = BaseRateAdaptor()
-        self._rate_adaptor = QuadraticRateAdaptor()
+        #self._rate_adaptor = QuadraticRateAdaptor()
+        self._rate_adaptor = FairRateAdaptor()
 
     def doECN(self, chunk):
         '''
@@ -113,7 +115,8 @@ class QueueManagerTB(BaseQueueManager):
         occupancy_percent = self._buf_man.occupancyPercent()
 
         #new_rate = self._rate_adaptor.newRate(src_buf.rate, occupancy_percent)
-        new_rate = self._rate_adaptor.newRate(src_buf.last_inc_rate, occupancy_percent)
+        new_rate = self._rate_adaptor.newRate(src_buf.last_inc_rate,
+                                              occupancy_percent, self._buf_man.bandwidth())
         if new_rate < src_buf.rate:
             src_buf.setRate(new_rate)
 
@@ -128,4 +131,10 @@ class QuadraticRateAdaptor(BaseRateAdaptor):
         reduction = float(old_rate) / 100 * gain
         new_rate = old_rate - reduction
         return new_rate
+
+class FairRateAdaptor(BaseRateAdaptor):
+    def newRate(self, old_rate, occupancy_percent, link_capacity):
+        num_flow = 40
+        fair_share = link_capacity / num_flow
+        return fair_share
 
