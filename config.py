@@ -49,7 +49,7 @@ class Config(object):
 
         use_ECN = parsed.use_ECN.lower()
         assert use_ECN == 'true' or use_ECN == 'false'
-        self.use_ECN = use_ECN
+        self.use_ECN = True if use_ECN == 'true' else False
 
         self.topo_str = parsed.topo_str
         self.traff_str = parsed.traff_str
