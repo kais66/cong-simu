@@ -9,7 +9,8 @@ from buffer_manager import *
 
 class BaseQueueManager(object):
     EXP_BACKOFF_MEAN = 10 # in milliseconds
-    SET_POINT_RATIO = 0.5
+    #SET_POINT_RATIO = 0.5
+    SET_POINT_RATIO = 0.2
     def __init__(self, buf_man, simu):
         self._buf_man = buf_man 
         self._simu = simu
@@ -84,8 +85,8 @@ class QueueManagerTB(BaseQueueManager):
     def __init__(self, buf_man, simu):
         super(QueueManagerTB, self).__init__(buf_man, simu)
 
-        #self._rate_adaptor = BaseRateAdaptor()
-        #self._rate_adaptor = QuadraticRateAdaptor()
+        #self._rate_adaptor = BaseRateAdaptor(self._buf_man)
+        #self._rate_adaptor = QuadraticRateAdaptor(self._buf_man)
         self._rate_adaptor = FairRateAdaptor(self._buf_man)
 
     def doECN(self, chunk):
