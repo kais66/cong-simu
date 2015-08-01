@@ -163,7 +163,7 @@ class LinkBufferManager(BaseBufferManager):
         node_id, buf_man_id = self.node().id(), self.id()
 
         # this is the format
-        stat_list = [node_id, buf_man_id, self.simu.time(), self.curTotalByte()]
+        stat_list = [node_id, buf_man_id, self._simulator.time(), self.curTotalByte()]
         self.rate_logger.log(stat_list)
 
     def latency(self):
