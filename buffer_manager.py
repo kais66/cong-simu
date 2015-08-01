@@ -149,6 +149,23 @@ class LinkBufferManager(BaseBufferManager):
         self._intv = 1.0 # length of scheduling interval in ms, later can change this to 1,000,000/band
         self._tx_until = 0.0
 
+        self._logger = self._simulator.queueLenLogger()
+        self.initLoggerEvt()
+
+    def initLoggerEvt(self):
+        periodicity = 200 # in milliseconds
+
+        timestamp = 0.0
+        evt = LogEvent(self._simulator, timestamp, self, periodicity)
+        self._simulator.enqueue(evt)
+
+    def log(self):
+        node_id, buf_man_id = self.node().id(), self.id()
+
+        # this is the format
+        stat_list = [node_id, buf_man_id, self.simu.time(), self.curTotalByte()]
+        self.rate_logger.log(stat_list)
+
     def latency(self):
         return self._lat
 

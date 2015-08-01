@@ -26,7 +26,7 @@ class Simulator(object):
         self._cong_str = config.exp_type
         self._rate_str = config.rate_str
 
-        self._logger, self._rate_logger = None, None
+        self._logger, self._rate_logger, self._queue_len_logger = None, None, None
         # use a list to retain references to all loggers, in order to call
         # on each of these loggers
         self._logger_list = []
@@ -38,19 +38,28 @@ class Simulator(object):
     def initLoggers(self):
 
         # response time logger
-        if self._config.use_ECN:
-            self._logger = OutputLogger('output/respTimes_{}WithECN_{}.csv'.format(self._cong_str, self._rate_str))
-        else:
-            self._logger = OutputLogger('output/respTimes_{}_{}.csv'.format(self._cong_str, self._rate_str))
+        ECN_str = 'WithECN' if self._config.use_ECN else ''
+        self._logger = OutputLogger('output/respTimes_{}{}_{}.csv'.format(
+            self._cong_str, ECN_str, self._rate_str))
+        self._queue_len_logger = OutputLogger('output/queueLen_{}{}_{}.csv'.
+            format(self._cong_str, ECN_str, self._rate_str))
+
         self._logger_list.append(self._logger)
+        self._logger_list.append(self._queue_len_logger)
 
         # rate logger, only for Token Bucket based AppBuf, in PerIf experiment
         if self._config.exp_type == 'PerIf' and self._config.use_ECN:
-            self._rate_logger = OutputLogger('output/rate_{}.csv'.format(self._rate_str))
+            self._rate_logger = OutputLogger('output/rate_{}.csv'.format(
+                self._rate_str))
             self._logger_list.append(self._rate_logger)
+
+
 
     def rateLogger(self):
         return self._rate_logger
+
+    def queueLenLogger(self):
+        return self._queue_len_logger
 
     def loadInput(self):
         ''' cong_str: 'PerFlow' or 'PerIf'; rate_str: integer between 3000 and 10000. '''
