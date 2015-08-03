@@ -318,7 +318,8 @@ class AppBufferTB(BaseBuffer):
         #assert old_rate >= AppBufferTB.MIN_RATE
 
         self.rate = new_rate
-        print 'AppBuf.setRate: rate changed from {} to {}'.format(old_rate, new_rate)
+        print 'AppBuf.setRate: node: {}'s buffer: {}, rate changed from {} to {}'.' \
+                format(self.node().id(), self.buf_id, old_rate, new_rate)
 
         # rate reduced
         if new_rate < old_rate:
