@@ -204,7 +204,7 @@ class PerIfRatePlot(object):
 
 class ResponseTimePlot(object):
     '''
-    for a sinlge rate, plot boxplot of resp times for each experiment
+    for a single rate, plot boxplot of resp times for each experiment
     '''
     def __init__(self, topo_traff_str):
         self.rates = rates_dic[topo_traff_str]
@@ -355,9 +355,6 @@ class PerIfRateData(object):
         # stacking two column vectors
         ret = np.c_[valid_entries[:, PerIfRateData.TIME_POS],
                         valid_entries[:, PerIfRateData.RATE_POS]]
-        #ret = np.hstack((valid_entries[:, PerIfRateData.SRC_POS],
-        #                valid_entries[:, PerIfRateData.DST_POS]))
-        #ret = ret.transpose()
         #print ret
         return ret
 
