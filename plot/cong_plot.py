@@ -264,7 +264,7 @@ class ResponseTimePlot(object):
 
         #plt.show()
         file_format = 'png'
-        save_path = 'cong-simu/plot/figure/respTime.{}'.format(
+        save_path = 'cong-simu/plot/respTime.{}'.format(
             file_format)
         plt.savefig(save_path)
 
