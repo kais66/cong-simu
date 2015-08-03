@@ -323,8 +323,9 @@ class AppBufferTB(BaseBuffer):
 
         # rate reduced
         if new_rate < old_rate:
-            print >> sys.stderr, 'AppBuf.setRate: rate changed from {} to {}'.format(old_rate, new_rate)
-
+            print >> sys.stderr, \
+                'AppBuf.setRate: node: {} buffer: {}, rate changed from {} to {}'. \
+                format(self.node().id(), self.buf_id, old_rate, new_rate)
 
             time_passed = self.simu.time() - self.last_time
             token_accrued = old_rate * time_passed

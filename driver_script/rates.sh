@@ -3,7 +3,7 @@
 Small9EqualRates=("0.5" "0.7" "0.9" "1.1" "1.3" "1.5" "2.0")
 
 # small skewed traffic
-Small9SkewedRates=("0.5" "0.7" "0.9" "1.1" "1.3" "1.5" "1.7" "2.0")
+Small9SkewedRates=("0.5" "0.7" "0.9" "1.1" "1.3" "1.5" "2.0")
 
 Small9AllPairEqualRates=("0.5" "0.7" "0.9" "1.1" "1.3" "1.5")
 
