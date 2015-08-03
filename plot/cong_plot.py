@@ -262,7 +262,11 @@ class ResponseTimePlot(object):
         plt.xlim(0, 4*len(self.rates) +2 )
         labelPlot('offered load (MB/s)', 'Response time (ms)','')
 
-        plt.show()
+        #plt.show()
+        file_format = 'png'
+        save_path = 'cong-simu/plot/figure/respTime.{}'.format(
+            file_format)
+        plt.savefig(save_path)
 
 ###############################################################################
 # Class for actually getting the data
