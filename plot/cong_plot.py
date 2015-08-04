@@ -209,7 +209,6 @@ class ResponseTimePlot(object):
     def __init__(self, topo_traff_str):
         self.rates = rates_dic[topo_traff_str]
 
-
         self.exp_list = ['PerFlow', 'PerIf', 'PerIfWithECN']
 
         traff_demand = demand.DemandSmallSkewed()
@@ -240,6 +239,8 @@ class ResponseTimePlot(object):
                 # because each concatenation in numpy is a copy
                 # not like what's in python list.
                 this_time_data = thru_data.allCompletionTime()#.tolist()
+                print 'exp: {}, length of data: {}'.format(
+                    exp, this_time_data.shape[0])
                 time_data.append(this_time_data)
 
 

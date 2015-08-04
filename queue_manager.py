@@ -61,27 +61,27 @@ class BaseQueueManager(object):
         srcNode = self._simu.getNodeById(src_id)
         srcNode.src.app_buf_man.addDelay(dst_id, delay)
 
-class CongSrcQueueManager(BaseQueueManager):
-    def decideFlowDelay(self, chunk):
-        # if this is a blocked interface (buffer), don't do ECN base on it.
-        # Becuase this is not the source of congestion
-        cong_ctrl = self._buf_man._buffer.congCtrl()
-        
-        if cong_ctrl.numBlockOut() > 0:
-            return 0.0
-
-        occupancy_percent = self._buf_man.occupancyPercent()
-        if occupancy_percent <= BaseQueueManager.SET_POINT_RATIO:
-            return 0.0
-
-        # use a quadratic function to do backoff
-        #gain = (occupancy_percent * 10) ** 3
-        gain = (occupancy_percent * 10) ** 2 
-
-        delay = BaseQueueManager.EXP_BACKOFF_MEAN * gain
-        print 'CongSrcQueueManager.decideFlowDelay(): occupancy_percent: {}, delay: {}' \
-            .format(occupancy_percent, delay)
-        return delay
+# ## this is obsolete for now.
+# class CongSrcQueueManager(BaseQueueManager):
+#     def decideFlowDelay(self, chunk):
+#         # if this is a blocked interface (buffer), don't do ECN base on it.
+#         # Becuase this is not the source of congestion
+#         cong_ctrl = self._buf_man._buffer.congCtrl()
+#
+#         if cong_ctrl.numBlockOut() > 0:
+#             return 0.0
+#
+#         occupancy_percent = self._buf_man.occupancyPercent()
+#         if occupancy_percent <= BaseQueueManager.SET_POINT_RATIO:
+#             return 0.0
+#
+#         # use a quadratic function to do backoff
+#         gain = (occupancy_percent * 10) ** 2
+#
+#         delay = BaseQueueManager.EXP_BACKOFF_MEAN * gain
+#         print 'CongSrcQueueManager.decideFlowDelay(): occupancy_percent: {}, delay: {}' \
+#             .format(occupancy_percent, delay)
+#         return delay
         
 class QueueManagerTB(BaseQueueManager):
     def __init__(self, buf_man, simu):
@@ -89,7 +89,8 @@ class QueueManagerTB(BaseQueueManager):
 
         #self._rate_adaptor = BaseRateAdaptor(self._buf_man)
         #self._rate_adaptor = QuadraticRateAdaptor(self._buf_man)
-        self._rate_adaptor = FairRateAdaptor(self._buf_man)
+        #self._rate_adaptor = FairRateAdaptor(self._buf_man)
+        self._rate_adaptor = FairRateQueueLenAdaptor(self._buf_man)
 
     def doECN(self, chunk):
         '''
@@ -98,9 +99,7 @@ class QueueManagerTB(BaseQueueManager):
         :return:
         '''
 
-
         self.__adjustSrcRate(chunk)
-
 
     def __adjustSrcRate(self, chunk):
         '''
@@ -146,6 +145,19 @@ class FairRateAdaptor(BaseRateAdaptor):
         if num_flow > 0:
             fair_share = link_capacity / num_flow
         return fair_share
+
+class FairRateQueueLenAdaptor(BaseRateAdaptor):
+    def newRate(self, old_rate, occupancy_percent):
+        link_capacity = self.buf_man.bandwidth()
+        num_flow = self.buf_man._flow_counter.numFlow()
+        fair_share = link_capacity
+        if num_flow > 0:
+            fair_share = link_capacity / num_flow
+
+        # taking queue length into account
+        gain = (occupancy_percent - BaseQueueManager.SET_POINT_RATIO) ** 2
+        reduction = float(fair_share) * gain
+        return fair_share - reduction
 
 ###############################################################################
 # FlowCounter: used to count number of concurrent flows going through a buf_man
