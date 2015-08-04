@@ -24,6 +24,7 @@ traff_demand = demand.DemandSmallSkewed()
 #offered = {rate : str(traff_demand.offeredLoad(float(rate))) for rate in rates}
 
 trace_base_path = '/Users/SunnySky/workspace/cong-simu/output/'
+trace_topo_path = '/Users/SunnySky/workspace/cong-simu/topo_files/'
 
 class ThroughputPlot(object):
     def __init__(self, topo_traff_str):
@@ -290,6 +291,7 @@ class ThroughputData(object):
         self.FILESIZE_POS = 6
         self.CHKSIZE_POS = 7
         self.FILEID_POS = 8
+        self.HOPCOUNT_POS = 9
 
         if index is not None:
             self.ENDTS_POS = index['ENDTS_POS']
@@ -330,7 +332,33 @@ class ThroughputData(object):
         valid_entries = np_array[np_array[:, self.FILEID_POS] == np_array[:, self.CHUNKID_POS]]
         return valid_entries
 
-    #def respTimeByHopCount(self, raw_csv_data):
+    def respTimeByHopCount(self, topo_str):
+        '''
+        returns a list of np arrays: the first array contains all resp time
+        values for the (src,dst) pair whose hop count is 1; and so on.
+        '''
+        # need to work on top of raw csv values: append each line with a hop count
+        hop_count_mtx = process_trace.readCSVToFloatMatrix(
+            '{}{}.hop'.format(trace_topo_path, topo_str))
+        hop_count_dic = {} # 'src,dst':count
+
+        for line in hop_count_mtx:
+            hop_count_dic['{},{}'.format(line[0], line[1])] = int(line[2])
+        max_count = max(hop_count_dic.values())
+
+        for line in self.raw_csv_data:
+            src, dst = line[self.SRC_POS], line[self.DST_POS]
+            count = hop_count_dic['{},{}'.format(min(src, dst), max(src, dst))]
+            line.append(count)
+
+        all_data_array = np.array(self.raw_csv_data)
+        ret = []
+        # now process: group rows into bins based on hop count
+        for this_hop_count in xrange(1, max_count+1):
+            valid_rows = all_data_array[all_data_array[:, self.HOPCOUNT_POS]
+                                        == this_hop_count]
+            ret.append(valid_rows[:, self.DELAY_POS])
+        return ret
 
 
 class PerIfRateData(object):
