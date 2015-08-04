@@ -18,6 +18,10 @@ cd ../
 
 output_sink="/dev/null"
 
-for thisRate in "${Small9AllPairEqualRates[@]}"; do
-    python main.py $exp_str $use_ECN Small9 AllPairEqual $thisRate > $output_sink 
+#for thisRate in "${Small9AllPairEqualRates[@]}"; do
+#    python main.py $exp_str $use_ECN Small9 AllPairEqual $thisRate > $output_sink 
+#done
+
+for thisRate in "${AbileneEqualRates[@]}"; do
+    python main.py $exp_str $use_ECN Abilene Equal $thisRate > $output_sink 
 done

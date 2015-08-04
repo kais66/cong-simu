@@ -195,8 +195,8 @@ if __name__ == '__main__':
     sim = Simulator(config)
     sim.loadInput()
 
-    sim.writeHopCountFile()
-    sys.exit()
+    #sim.writeHopCountFile()
+    #sys.exit()
 
     sim.run()
     sim.logToFile()
