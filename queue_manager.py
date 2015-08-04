@@ -18,7 +18,9 @@ class BaseQueueManager(object):
 
     def doECN(self, chunk):
         delay = self.decideFlowDelay(chunk)
-        if delay > 0.0:
+        if delay >= 0.0:
+            # Delay could be 0.0 if it's between the application and link layer
+            # on the same node.
             self.applyFlowDelay(chunk.src(), chunk.dst(), delay)
 
     def needECN(self):
