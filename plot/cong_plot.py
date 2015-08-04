@@ -47,7 +47,8 @@ class ThroughputPlot(object):
         used to get offered load
         :return:
         '''
-        offered = np.array([traffic_demand.offeredLoad(rate) for rate in self.rate_values])
+        #offered = np.array([traffic_demand.offeredLoad(rate) for rate in self.rate_values])
+        offered = np.array(self.rate_values[:])
 
         # each row is the throughput list for a single experiment, where each
         # entry is for a particular rate
@@ -214,8 +215,8 @@ class ResponseTimePlot(object):
 
         traff_demand = demand.DemandSmallSkewed()
         self.rate_values = [float(entry) for entry in self.rates]
-        self.offered = np.array([traff_demand.offeredLoad(rate) for rate in self.rate_values])
-
+        #self.offered = np.array([traff_demand.offeredLoad(rate) for rate in self.rate_values])
+        self.offered = self.rate_values[:]
         self.plot()
 
     #http://stackoverflow.com/questions/16592222/matplotlib-group-boxplots
