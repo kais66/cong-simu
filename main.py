@@ -155,12 +155,49 @@ class Simulator(object):
                 src_id, dst_id, latency)
         return latency
 
+    def writeHopCountFile(self):
+        # this function is not supposed to run along with the simulator.
+        file_path = 'topo_files/{}.hop'.format(self._config.topo_str)
+        with open(file_path, 'w') as f:
+            node_id_list = self.nodesDic().keys()
+            num_node = len(node_id_list)
+            for node_pos in xrange(num_node):
+                node_id = node_id_list[node_pos]
+                for nbr_pos in xrange(num_node):
+                    nbr_id = node_id_list[nbr_pos]
+                    if node_id >= nbr_id: continue
+                    line = '{},{},{}\n'.format(node_id, nbr_id,
+                            self.calcHopCount(node_id, nbr_id))
+                    f.write(line)
+
+
+    def calcHopCount(self, src_id, dst_id):
+        '''
+        public interface. Calculate raw aggregated link latencies between a src and a dst
+        :param src_id:
+        :param dst_id:
+        :return:
+        '''
+        cur_id = src_id
+        count = 0
+        while cur_id != dst_id:
+            cur_node = self._node_dic[cur_id]
+            buf_man = cur_node.getBufManByDst(dst_id)
+            count += 1
+            cur_id = buf_man.id()
+        return count
+
+
 if __name__ == '__main__':
     json_path = 'setting/base.json'
     config = Config(json_path, sys.argv)
 
     sim = Simulator(config)
     sim.loadInput()
+
+    sim.writeHopCountFile()
+    sys.exit()
+
     sim.run()
     sim.logToFile()
     print 'succeeded'

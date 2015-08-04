@@ -9,15 +9,15 @@ class AllDstList(object):
 
 class AllSrcList(object):
     def __init__(self):
-        self.src_list = [1, 2, 3, 5, 8, 9]
-        self.dst_list = [6]
+        self.src_list = [1, 2, 3, 4, 5, 6, 7, 8, 9]
+        self.dst_list = [1]
 
 class Small9List(object):
     def __init__(self):
         self.src_list = [1, 2]
         self.dst_list = [6, 7, 8, 9]
 if __name__ == "__main__":
-    sd_list = AllDstList()
+    sd_list = AllSrcList()
     src_list = sd_list.src_list
     dst_list = sd_list.dst_list
 

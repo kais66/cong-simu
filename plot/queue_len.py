@@ -27,8 +27,8 @@ class QueueLenPlot(object):
                         cong_plot.marker_iter.next(), markersize=10,
                          linewidth=2, label='{}, {}-{}'.
                         format(exp, str(self.node_id), str(self.buf_man_id)))
-        cong_plot.labelPlot('time (ms)', 'Queue length (bytes)', '', 'lower left')
-        plt.axis([0, 100000, 0, 15000000])
+        cong_plot.labelPlot('time (ms)', 'Queue length (bytes)', '', 'upper left')
+        #plt.axis([0, 100000, 0, 15000000])
         plt.show()
 
 class QueueLenData(object):

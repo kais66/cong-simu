@@ -274,6 +274,9 @@ class ResponseTimePlot(object):
 ###############################################################################
 
 class ThroughputData(object):
+    '''
+    This class provides a handle to all the data columns from respTime.csv
+    '''
     SIMU_LENG = 100000.0 # 100s
 
     def __init__(self, file_path, index=None):
@@ -293,8 +296,9 @@ class ThroughputData(object):
             self.DST_POS = index['DST_POS']
             self.CHKSIZE_POS = index['CHKSIZE_POS']
 
+        self.raw_csv_data = process_trace.readCSVToFloatMatrix(file_path)
         # numpy 2-d array
-        all_data_array = np.array(process_trace.readCSVToFloatMatrix(file_path))
+        all_data_array = np.array(self.raw_csv_data)
         # only retain the flows finished before simu length
         self.array = all_data_array[all_data_array[:, self.ENDTS_POS]
                         <= ThroughputData.SIMU_LENG]
@@ -322,10 +326,12 @@ class ThroughputData(object):
         return valid_entries[:, self.DELAY_POS]
         #total_time = np.sum(valid_entries, axis=0)[self.DELAY_POS]
 
-
     def __retainOneChkPerFile(self, np_array):
         valid_entries = np_array[np_array[:, self.FILEID_POS] == np_array[:, self.CHUNKID_POS]]
         return valid_entries
+
+    #def respTimeByHopCount(self, raw_csv_data):
+
 
 class PerIfRateData(object):
     '''
