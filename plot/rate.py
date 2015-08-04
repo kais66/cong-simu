@@ -17,7 +17,7 @@ class Small9List(object):
         self.src_list = [1, 2]
         self.dst_list = [6, 7, 8, 9]
 if __name__ == "__main__":
-    sd_list = AllSrcList()
+    sd_list = AllDstList()
     src_list = sd_list.src_list
     dst_list = sd_list.dst_list
 

@@ -15,7 +15,8 @@ class BaseBufferManager(object):
         self._simulator = simu
         
         self._cur_byte = 0
-        self._MAX_BYTE = BaseBufferManager.MB_1 * 10
+        #self._MAX_BYTE = BaseBufferManager.MB_1 * 10
+        self._MAX_BYTE = BaseBufferManager.MB_1 * 4
 
     def id(self):
         return self._id
