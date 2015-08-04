@@ -25,8 +25,8 @@ class BaseQueueManager(object):
         cong_ctrl = self._buf_man._buffer.congCtrl()
 
         # if cur node is blocked out, this is not a source of congestion
-        if cong_ctrl.numBlockOut() > 0:
-            return False
+        #if cong_ctrl.numBlockOut() > 0:
+        #    return False
 
         occupancy_percent = self._buf_man.occupancyPercent()
         print 'queueMan.needECN: occupancy percentage: {}'.format(occupancy_percent)
