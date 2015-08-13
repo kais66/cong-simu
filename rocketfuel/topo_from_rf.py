@@ -50,7 +50,7 @@ class ASTopoParser(object):
             if node_str not in self.node_dic:
                 self.node_dic[node_str] = node_id
                 node_id += 1
-        #print 'num nodes: {}'.format(len(self.node_dic))
+        print 'num nodes: {}'.format(len(self.node_dic))
 
         node_list = self.node_dic.keys()
         node_list.sort()

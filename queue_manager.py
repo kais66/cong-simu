@@ -15,6 +15,8 @@ class BaseQueueManager(object):
         self._buf_man = buf_man 
         self._simu = simu
 
+        # for logging ECN messages
+        self._ecn_logger = self._simu.ecnLogger()
 
     def doECN(self, chunk):
         delay = self.decideFlowDelay(chunk)
@@ -36,30 +38,35 @@ class BaseQueueManager(object):
             return False
 
         return True
+    def log(self):
+        # don't need a separate log event as for logging queue length,
+        # because this is not done periodically, and we can piggyback this
+        # on the ECNMsgEvt.
+        pass
 
-    def decideFlowDelay(self, chunk):
-        ''' 
-            Based on the current occupancy, determine how long the flow src should backoff. 
-            This basic version applies a exponential delay, multiplied by occupancy.
-        '''
-        occupancy_percent = self._buf_man.occupancyPercent()
-        print 'BaseQueueManager.decideFlowDelay(): occupancy_percent: {}'.format(occupancy_percent)
-        if occupancy_percent <= 0.2:
-            return 0.0
-
-        #if chunk.dst() != 9:
-        #    return 0.0
-
-        mean = BaseQueueManager.EXP_BACKOFF_MEAN        
-        delay = random.expovariate(1.0 / mean)
-        return delay
-
-    def applyFlowDelay(self, src_id, dst_id, delay):
-        ''' get the src node, add delay to (src, dst)'s current delay '''
-        print 'BaseQueueManager.applyFlowDelay: src: {}, dst: {}, delay: {}' \
-                .format(src_id, dst_id, delay)
-        srcNode = self._simu.getNodeById(src_id)
-        srcNode.src.app_buf_man.addDelay(dst_id, delay)
+    # def decideFlowDelay(self, chunk):
+    #     '''
+    #         Based on the current occupancy, determine how long the flow src should backoff.
+    #         This basic version applies a exponential delay, multiplied by occupancy.
+    #     '''
+    #     occupancy_percent = self._buf_man.occupancyPercent()
+    #     print 'BaseQueueManager.decideFlowDelay(): occupancy_percent: {}'.format(occupancy_percent)
+    #     if occupancy_percent <= 0.2:
+    #         return 0.0
+    #
+    #     #if chunk.dst() != 9:
+    #     #    return 0.0
+    #
+    #     mean = BaseQueueManager.EXP_BACKOFF_MEAN
+    #     delay = random.expovariate(1.0 / mean)
+    #     return delay
+    #
+    # def applyFlowDelay(self, src_id, dst_id, delay):
+    #     ''' get the src node, add delay to (src, dst)'s current delay '''
+    #     print 'BaseQueueManager.applyFlowDelay: src: {}, dst: {}, delay: {}' \
+    #             .format(src_id, dst_id, delay)
+    #     srcNode = self._simu.getNodeById(src_id)
+    #     srcNode.src.app_buf_man.addDelay(dst_id, delay)
 
 # ## this is obsolete for now.
 # class CongSrcQueueManager(BaseQueueManager):

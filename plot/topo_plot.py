@@ -1,4 +1,5 @@
 from graph_tool.all import *
+import sys
 
 base_path = '../topo_files/'
 class TopoPlot(object):
@@ -31,5 +32,6 @@ class TopoPlot(object):
             output_size=(800, 800), output='{}.png'.format(self.topo_str))
 
 if __name__ == '__main__':
-    tp = TopoPlot('abilene')
+    topo_str = sys.argv[1]
+    tp = TopoPlot(topo_str)
     tp.plot()

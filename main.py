@@ -27,6 +27,8 @@ class Simulator(object):
         self._rate_str = config.rate_str
 
         self._logger, self._rate_logger, self._queue_len_logger = None, None, None
+        self._ecn_logger = None
+
         # use a list to retain references to all loggers, in order to call
         # on each of these loggers
         self._logger_list = []
@@ -53,6 +55,11 @@ class Simulator(object):
                 self._rate_str))
             self._logger_list.append(self._rate_logger)
 
+            self._ecn_logger = OutputLogger('output/ecn_{}.csv'.format(
+                self._rate_str))
+            self._logger_list.append(self._ecn_logger)
+
+
 
 
     def rateLogger(self):
@@ -60,6 +67,9 @@ class Simulator(object):
 
     def queueLenLogger(self):
         return self._queue_len_logger
+
+    def ecnLogger(self):
+        return self._ecn_logger
 
     def loadInput(self):
         ''' cong_str: 'PerFlow' or 'PerIf'; rate_str: integer between 3000 and 10000. '''
