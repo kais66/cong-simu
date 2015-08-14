@@ -49,9 +49,11 @@ class ArrivalTrace(object):
             #self.topo_str = 'Small9Skewed'
         elif demand_init_str == 'Small9AllPairEqual':
             demand_initializer = DemandEqual(self.topo_str, self.rate_bytepms)
-        elif demand_init_str == 'AbileneEqual':
+        elif demand_init_str == 'AbileneEqual' or \
+            demand_init_str == 'ExodusEqual':
             demand_initializer = DemandEqual(self.topo_str, self.rate_bytepms)
             #self.topo_str = 'AbileneEqual'
+
         else:
             print 'error in argument'
             sys.exit()
