@@ -164,7 +164,7 @@ class FairRateQueueLenAdaptor(BaseRateAdaptor):
         # taking queue length into account
         gain = (occupancy_percent - BaseQueueManager.SET_POINT_RATIO) ** 2
         reduction = float(fair_share) * gain
-        return fair_share - reduction
+        return max(0.0, fair_share - reduction)
 
 ###############################################################################
 # FlowCounter: used to count number of concurrent flows going through a buf_man
