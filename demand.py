@@ -50,7 +50,8 @@ class ArrivalTrace(object):
         elif demand_init_str == 'Small9AllPairEqual':
             demand_initializer = DemandEqual(self.topo_str, self.rate_bytepms)
         elif demand_init_str == 'AbileneEqual' or \
-            demand_init_str == 'ExodusEqual':
+            demand_init_str == 'ExodusEqual' or \
+            demand_init_str == 'Level3Equal':
             demand_initializer = DemandEqual(self.topo_str, self.rate_bytepms)
             #self.topo_str = 'AbileneEqual'
 
