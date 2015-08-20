@@ -48,7 +48,8 @@ class BaseBufferManager(object):
         return self._cur_byte
 
     def occupancyPercent(self):
-        return float(self._cur_byte) / self._MAX_BYTE
+        # with current impl, this could be bigger than 1.0
+        return min(1.0, float(self._cur_byte) / self._MAX_BYTE)
 
 
 

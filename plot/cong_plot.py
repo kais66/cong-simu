@@ -5,6 +5,7 @@ from .. import demand
 from matplotlib.lines import Line2D
 # to generate an iterator for line markers
 import itertools
+from .. import queue_manager
 
 # this rate list should be kept in sync with the one in the shell scripts
 #rates = ["0.5", "0.7", "0.9", "1.1", "1.3", "1.5", "2.0", "3.0"]
@@ -127,17 +128,18 @@ class DstThroughputPlot(object):
 
         legend_str = ['dst: '+ str(dst) for dst in self.dst_list]
         plt.xticks(index + bar_width, legend_str)
-        offered_load = offered[self.rate_str]
 
-        labelPlot('', 'Throughput (MB/s)', 'Offered load ' + offered_load)
+        #offered_load = offered[self.rate_str]
+
+        labelPlot('', 'Throughput (MB/s)', 'Offered load ' + self.rate_str)
         #plt.tight_layout()
-        #plt.show()
+        plt.show()
 
 
-        file_format = 'png'
-        save_path = 'cong-simu/plot/figure/perDstThru_{}.{}'.format(
-            offered_load, file_format)
-        plt.savefig(save_path)
+        #file_format = 'png'
+        #save_path = 'cong-simu/plot/figure/perDstThru_{}.{}'.format(
+        #    self.rate_str, file_format)
+        #plt.savefig(save_path)
 
 class TraffInputPlot(object):
     '''
@@ -275,13 +277,18 @@ class ResponseTimePlot(object):
 ###############################################################################
 # Class for actually getting the data
 ###############################################################################
-
-class ThroughputData(object):
+class RespTimeFileReader(object):
     '''
-    This class provides a handle to all the data columns from respTime.csv
+    This class provides a handle to raw python list and np array of data read
+    from the respTime output files. It provides the underlying data to the
+    classes which generate plotting data.
+
+    From an OO Design point of view, this is a good practice: because the data
+    encapsulated in this class are used by a number of classes, it's better to
+    use a class to encapsulate the data, and let the other classes referencing
+    this class.
     '''
     SIMU_LENG = 100000.0 # 100s
-
     def __init__(self, file_path, index=None):
         # based on the positions of entries defined when writing the throughput trace
         self.CHUNKID_POS = 0
@@ -305,18 +312,28 @@ class ThroughputData(object):
         all_data_array = np.array(self.raw_csv_data)
         # only retain the flows finished before simu length
         self.array = all_data_array[all_data_array[:, self.ENDTS_POS]
-                        <= ThroughputData.SIMU_LENG]
+                        <= RespTimeFileReader.SIMU_LENG]
+
+class ThroughputData(object):
+    '''
+    This class provides a handle to all the data columns from respTime.csv
+    '''
+
+    def __init__(self, file_path, index=None):
+        self.reader = RespTimeFileReader(file_path, index)
+        self.raw_csv_data = self.reader.raw_csv_data
+        self.array = self.reader.array
 
     def overallThroughput(self, np_array=None):
         if np_array is None:
             np_array = self.array
-        total_bytes = np.sum(np_array, axis=0)[self.CHKSIZE_POS]
+        total_bytes = np.sum(np_array, axis=0)[self.reader.CHKSIZE_POS]
         #total_bytes = np.sum(np_array, axis=0)[ThroughputData.FILESIZE_POS]
-        thru_mbyteps = float(total_bytes) / 1048576 / (ThroughputData.SIMU_LENG / 1000)
+        thru_mbyteps = float(total_bytes) / 1048576 / (RespTimeFileReader.SIMU_LENG / 1000)
         return thru_mbyteps
 
     def dstThroughput(self, dst):
-        valid_entries = self.array[self.array[:, self.DST_POS] == dst]
+        valid_entries = self.array[self.array[:, self.reader.DST_POS] == dst]
         #if dst==6: print valid_entries.tolist()
         return self.overallThroughput(valid_entries)
 
@@ -327,11 +344,12 @@ class ThroughputData(object):
         # because completion time is per file, not per chunk; we need to filter
         # the array so that each file is considered only once
         valid_entries = self.__retainOneChkPerFile(np_array)
-        return valid_entries[:, self.DELAY_POS]
+        return valid_entries[:, self.reader.DELAY_POS]
         #total_time = np.sum(valid_entries, axis=0)[self.DELAY_POS]
 
     def __retainOneChkPerFile(self, np_array):
-        valid_entries = np_array[np_array[:, self.FILEID_POS] == np_array[:, self.CHUNKID_POS]]
+        valid_entries = np_array[np_array[:, self.reader.FILEID_POS] ==
+                                 np_array[:, self.reader.CHUNKID_POS]]
         return valid_entries
 
     def respTimeByHopCount(self, topo_str):
@@ -349,7 +367,7 @@ class ThroughputData(object):
         max_count = max(hop_count_dic.values())
 
         for line in self.raw_csv_data:
-            src, dst = line[self.SRC_POS], line[self.DST_POS]
+            src, dst = line[self.reader.SRC_POS], line[self.reader.DST_POS]
             count = hop_count_dic['{},{}'.format(min(src, dst), max(src, dst))]
             line.append(count)
 
@@ -357,10 +375,50 @@ class ThroughputData(object):
         ret = []
         # now process: group rows into bins based on hop count
         for this_hop_count in xrange(1, max_count+1):
-            valid_rows = all_data_array[all_data_array[:, self.HOPCOUNT_POS]
+            valid_rows = all_data_array[all_data_array[:, self.reader.HOPCOUNT_POS]
                                         == this_hop_count]
-            ret.append(valid_rows[:, self.DELAY_POS])
+            ret.append(valid_rows[:, self.reader.DELAY_POS])
         return ret
+
+class ThroughputByFlowData(object):
+    def __init__(self, file_path):
+        self.reader = RespTimeFileReader(file_path)
+        self.raw_csv_data = self.reader.raw_csv_data
+        self.array = self.reader.array
+
+    def __getData(self):
+        '''
+        flow_list: [[src, dst], ...]
+        returns a dict {"src,dst" : np_array}. Each np array contains all resp times.
+        '''
+        resp_dict = {}
+
+        for row in self.raw_csv_data:
+            this_flow = queue_manager.Flow(row[self.reader.SRC_POS],
+                                           row[self.reader.DST_POS])
+            if this_flow.hashKey() not in resp_dict:
+                resp_dict[this_flow.hashKey()] = []
+            resp_dict[this_flow.hashKey()].append(row)
+
+        for key in resp_dict.keys():
+            rows = np.array(resp_dict[key])
+            resp_dict[key] = rows[:, self.reader.CHKSIZE_POS]
+
+        return resp_dict
+
+    def avgFlowThruData(self):
+        thru_dict = self.__getData()
+
+        thru_list = [float(np.sum(v)) / (RespTimeFileReader.SIMU_LENG * 1000.0) # to get MB/s
+                     for (k,v) in thru_dict.iteritems()]
+
+        avg_thru = np.sort(np.array(thru_list))
+        #print avg_thru
+        return avg_thru
+
+
+
+
 
 
 class PerIfRateData(object):
