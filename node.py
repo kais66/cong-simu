@@ -244,7 +244,7 @@ class AppBufferTB(BaseBuffer):
     '''
     INITIAL_RATE = 2000.0
     MAX_RATE = 3000.0
-    MIN_RATE = 100.0 # 100 KB/s, or 100B/ms
+    MIN_RATE = 1.0 # 100 KB/s, or 100B/ms
 
     # rate increase granularity: increase rate every rate_inc_gran bytes
     RATE_INC_GRAN = 1000000 # default to 1MB
@@ -347,7 +347,7 @@ class AppBufferTB(BaseBuffer):
                     format(next_sched_time, self.node().id(), self.buf_id)
 
     def __additiveIncRate(self):
-        new_rate = self.rate + AppBufferTB.INITIAL_RATE * AppBufferTB.RATE_INC_FACTOR
+        new_rate = self.rate + 400.0
         if new_rate <= AppBufferTB.MAX_RATE:
             print 'appBuf.additiveInc: rate inc from {} to {}'.format(self.rate, new_rate)
             self.setRate(new_rate)
