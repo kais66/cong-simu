@@ -11,7 +11,7 @@ if __name__ == "__main__":
 #     if num_arg != 2 or rate_str not in rate_set:
 #         print 'error in arguments'
 
-    plt = ResponseTimePlot('ExodusEqual')
-    #plt = ResponseTimePlot('AbileneEqual')
+    #plt = ResponseTimePlot('ExodusEqual')
+    plt = ResponseTimePlot('AbileneEqual')
     #plt = ResponseTimePlot('Small9AllPairEqual')
     #plt = ResponseTimePlot('Small9Skewed')

@@ -53,14 +53,23 @@ class ResponseTimeByHopCountPlot(object):
                 num_flow.append(len(this_time_data))
 
             #plt.boxplot(time_data, positions=[2+ hop_count_pos*4+i for i in xrange(num_exp)])
-            ax1.boxplot(time_data, positions=[2+ hop_count_pos*4+i for i in xrange(num_exp)])
+            bp = ax1.boxplot(time_data, positions=[2+ hop_count_pos*4+i for i in
+                                                   xrange(num_exp)],
+                             patch_artist=True)
+            cong_plot.setBoxColor(bp, num_exp)
             ax2.plot([2+ hop_count_pos*4+i for i in xrange(num_exp)], num_flow, 'g*', markersize=10)
 
         ax1.set_xticklabels([str(entry+1) for entry in xrange(max_hop_count)])
         ax1.set_xticks([3 + i*4 for i in xrange(max_hop_count)])
-        ax1.set_ylabel('Resp. time CDF', color='b')
+        ax1.set_ylabel('Resp. time (ms)', color='b')
         ax2.set_ylabel('# completed flows', color='g')
         ax1.set_xlabel('Hop count')
+
+        lines = []
+        for exp_pos in xrange(len(self.exp_list)):
+            lines.append(plt.plot([0,0], '-', linewidth=2, color=
+            cong_plot.color_list[exp_pos])[0])
+        plt.legend(tuple(lines), tuple(self.exp_list))
         # 1 unit white space on the left and right edge
         # and 1 unit white space in-between two rates
         plt.xlim(0, 4*max_hop_count +2 )

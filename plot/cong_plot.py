@@ -6,6 +6,7 @@ from matplotlib.lines import Line2D
 # to generate an iterator for line markers
 import itertools
 from .. import queue_manager
+import pylab
 
 # this rate list should be kept in sync with the one in the shell scripts
 #rates = ["0.5", "0.7", "0.9", "1.1", "1.3", "1.5", "2.0", "3.0"]
@@ -33,7 +34,7 @@ class ThroughputPlot(object):
         self.rates = rates_dic[topo_traff_str]
         self.rate_values = [float(entry) for entry in self.rates]
 
-        exp_list = ['PerFlow', 'PerIf', 'PerIfWithECN']
+        exp_list = ['PerFlow', 'PerIfWithECN', 'PerIf']
         #exp_list = ['PerFlow', 'PerIfWithECN' ]
 
         #traff_demand = demand.DemandSmallEqual()
@@ -215,7 +216,7 @@ class ResponseTimePlot(object):
         self.rates = rates_dic[topo_traff_str]
 
         self.exp_list = ['PerFlow', 'PerIf', 'PerIfWithECN']
-
+        #self.exp_list = ['PerFlow']
         traff_demand = demand.DemandSmallSkewed()
         self.rate_values = [float(entry) for entry in self.rates]
         #self.offered = np.array([traff_demand.offeredLoad(rate) for rate in self.rate_values])
@@ -227,8 +228,6 @@ class ResponseTimePlot(object):
         ax = plt.axes()
         #fig = plt.figure()
         plt.hold(True)
-        whisker = [5, 95] # let whiskers show 5th and 95th percentile
-
         num_rates, num_exp = len(self.rates), len(self.exp_list)
 
         for rate_pos in xrange(num_rates):
@@ -249,16 +248,10 @@ class ResponseTimePlot(object):
                 time_data.append(this_time_data)
 
 
-            plt.boxplot(time_data, positions=[2+ rate_pos*4+i for i in xrange(num_exp)])
+            bp = plt.boxplot(time_data, positions=[2+ rate_pos*4+i for i in xrange(num_exp)],
+                             patch_artist=True)
                         #widths=0.6)
-
-            #plt.boxplot(time_data, labels=(exp,))
-        #np_data = np.array(time_data)
-        #print np.shape(np_data)
-
-
-        #plt.boxplot(time_data, whis=whisker, labels=self.exp_list)
-        #plt.boxplot(time_data, sym=None, labels=self.exp_list)
+            setBoxColor(bp, num_exp)
 
         ax.set_xticklabels([str(entry) for entry in self.offered])
         ax.set_xticks([3 + i*4 for i in xrange(len(self.rates))])
@@ -266,7 +259,13 @@ class ResponseTimePlot(object):
         # 1 unit white space on the left and right edge
         # and 1 unit white space in-between two rates
         plt.xlim(0, 4*len(self.rates) +2 )
-        labelPlot('offered load (MB/s)', 'Response time (ms)','')
+
+        # create dummy lines for legends
+        lines = []
+        for exp_pos in xrange(len(self.exp_list)):
+            lines.append(plt.plot([0,0], '-', linewidth=2, color=color_list[exp_pos])[0])
+        plt.legend(tuple(lines), tuple(self.exp_list));
+        labelPlot('offered load for each (src, dst) pair (MB/s)', 'Response time (ms)','')
 
         #plt.show()
         file_format = 'png'
@@ -386,7 +385,7 @@ class ThroughputByFlowData(object):
         self.raw_csv_data = self.reader.raw_csv_data
         self.array = self.reader.array
 
-    def __getData(self):
+    def __getData(self, index):
         '''
         flow_list: [[src, dst], ...]
         returns a dict {"src,dst" : np_array}. Each np array contains all resp times.
@@ -402,12 +401,22 @@ class ThroughputByFlowData(object):
 
         for key in resp_dict.keys():
             rows = np.array(resp_dict[key])
-            resp_dict[key] = rows[:, self.reader.CHKSIZE_POS]
+            resp_dict[key] = rows[:, index]
 
         return resp_dict
 
+    def avgFlowRespTime(self):
+        resp_dict = self.__getData(self.reader.DELAY_POS)
+
+        resp_list = [float(np.sum(v)) / len(v) # to get MB/s
+                     for (k,v) in resp_dict.iteritems()]
+
+        avg_resp = np.sort(np.array(resp_list))
+        #print avg_thru
+        return avg_resp
+
     def avgFlowThruData(self):
-        thru_dict = self.__getData()
+        thru_dict = self.__getData(self.reader.CHKSIZE_POS)
 
         thru_list = [float(np.sum(v)) / (RespTimeFileReader.SIMU_LENG * 1000.0) # to get MB/s
                      for (k,v) in thru_dict.iteritems()]
@@ -416,10 +425,22 @@ class ThroughputByFlowData(object):
         #print avg_thru
         return avg_thru
 
+    def hopWeightedAvgThru(self, hop_count):
+        thru_dict = self.__getData(self.reader.CHKSIZE_POS)
+        thru_list = []
+        for k,v in thru_dict.iteritems():
+            print k
+            nodes = k.split(',')
+            nodes_int = [int(float(node)) for node in nodes]
+            if nodes_int[0] > nodes_int[1]:
+                k = '{},{}'.format(nodes_int[1], nodes_int[0])
+            else:
+                k = '{},{}'.format(nodes_int[0], nodes_int[1])
 
+            thru = (float(np.sum(v)) / (RespTimeFileReader.SIMU_LENG * 1000.0)) * hop_count[k]
+            thru_list.append(thru)
 
-
-
+        return thru_list
 
 class PerIfRateData(object):
     '''
@@ -473,10 +494,12 @@ marker_list = [marker for marker in Line2D.markers if marker != ' ']
 marker_iter = itertools.cycle(marker_list)
 
 # http://matplotlib.org/examples/color/named_colors.html
-color_list = ['deepskyblue', 'royalblue', 'lawngreen', 'lightcoral', 'orange']
+color_list = ['deepskyblue', 'lawngreen', 'coral', 'royalblue', 'lightcoral', 'orange']
 color_iter = iter(color_list)
 
-
+def setBoxColor(box_plot_pair, num_exp):
+    for exp_pos in xrange(num_exp):
+        pylab.setp(box_plot_pair['boxes'][exp_pos], color=color_list[exp_pos])
 
 #if __name__ == "__main__":
 #    plt = ThroughputPlot()

@@ -13,6 +13,7 @@ class TopoPlot(object):
         ver_dic = {} # int(id) : vertex
         with open(self.file_path, 'r') as f:
             for line in f:
+                if line[0] == '#': continue
                 words = line.split(',')
                 cur_node = int(words[0])
                 num_nbr = int(words[1])
@@ -20,6 +21,7 @@ class TopoPlot(object):
 
         with open(self.file_path, 'r') as f:
             for line in f:
+                if line[0] == '#': continue
                 words = line.split(',')
                 cur_node = int(words[0])
                 num_nbr = int(words[1])
