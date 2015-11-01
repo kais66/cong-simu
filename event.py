@@ -319,6 +319,14 @@ class ECNMsgEvt(Event):
 
     def execute(self):
         if config.DEBUG: print '\n=== begin ECNMsgEvt'
+        # actually perform rate adaptation
         self._buf_man._queue_man.doECN(self._chunk)
+
+        # this is for logging
+        router_node_id, buf_man_id, src_id = self._buf_man.node().id(), \
+                self._buf_man._id, self._chunk.src()
+        statList = [router_node_id, buf_man_id, src_id, self.timestamp()]
+        ecnLogger = self._simu.ecnLogger()
+        ecnLogger.log(statList)
         if config.DEBUG: print '\n=== end ECNMsgEvt'
 
