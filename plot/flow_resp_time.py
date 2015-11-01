@@ -53,8 +53,8 @@ class ResponseTimeByFlowPlot(object):
 
 if __name__ == "__main__":
     rate_str = sys.argv[1]
-    topo_str = 'Abilene'
-    #topo_str = 'Small9'
+    #topo_str = 'Abilene'
+    topo_str = 'Small9'
     p = ResponseTimeByFlowPlot(rate_str, topo_str)
     #p.plotHist()
     p.plotCDF()

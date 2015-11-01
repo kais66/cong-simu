@@ -12,6 +12,6 @@ if __name__ == "__main__":
 #         print 'error in arguments'
 
     #plt = ResponseTimePlot('ExodusEqual')
-    plt = ResponseTimePlot('AbileneEqual')
+    #plt = ResponseTimePlot('AbileneEqual')
     #plt = ResponseTimePlot('Small9AllPairEqual')
-    #plt = ResponseTimePlot('Small9Skewed')
+    plt = ResponseTimePlot('Small9Skewed')

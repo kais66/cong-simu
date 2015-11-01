@@ -324,7 +324,8 @@ class AppBufferTB(BaseBuffer):
 
         # rate reduced
         if new_rate < old_rate:
-            print >> sys.stderr, \
+            #print >> sys.stderr, \
+            print \
                 'AppBuf.setRate: node: {} buffer: {}, rate changed from {} to {}'. \
                 format(self.node().id(), self.buf_id, old_rate, new_rate)
 

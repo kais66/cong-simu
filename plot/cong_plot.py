@@ -75,7 +75,9 @@ class ThroughputPlot(object):
         labelPlot('Offered load (MB/s)', 'Throughput (MB/s)', '', 'upper left')
         #plt.axis([0, 16, 0, 14])
         #plt.show()
-        plt.savefig('cong-simu/plot/offered')
+
+        #plt.savefig('cong-simu/plot/offered')
+        plt.savefig('cong-simu/plot/offered.eps')
 
 class DstThroughputPlot(object):
     def __init__(self, rate_str, dst_list):
