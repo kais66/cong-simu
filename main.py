@@ -197,6 +197,9 @@ class Simulator(object):
             cur_id = buf_man.id()
         return count
 
+    def getConfig(self):
+        return self._config
+
 
 if __name__ == '__main__':
     json_path = 'setting/base.json'

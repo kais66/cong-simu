@@ -25,13 +25,20 @@ class Config(object):
         self.topo_str = None
         self.traff_str = None
         self.rate_str = None
-
         self.topo_traff_str = None
+
+        # logging periodicity for queue length
+        # unit is milli-second
+        self.queue_len_log_peri = None
+
 
         self.cmdline_parser = argparse.ArgumentParser()
         print cmd_line_argv
+
+        # Command line arg have precedence over the Json file.
+        # i.e., only read the settings from Json which have not been set.
         self.initCmdLinePara(cmd_line_argv)
-        #self.initJsonPara(data)
+        self.initJsonPara(data)
 
     def initCmdLinePara(self, argv):
         self.cmdline_parser.add_argument('exp_type')
@@ -67,18 +74,25 @@ class Config(object):
         assert self.topo_str in valid_val['topo_str']
 
     def initJsonPara(self, json_data):
-        global_dict = self.json_data['global']
-        if 'experiment_type' in global_dict:
+        global_dict = json_data['global']
+        if not self.queue_len_log_peri and 'queue_len_log_periodicity':
+            self.queue_len_log_peri = int(global_dict['queue_len_log_periodicity'])
+            print 'queue_len_log_periodicity: {}'.format(self.queue_len_log_peri)
+
+        if not self.exp_type and 'experiment_type' in global_dict:
             self.exp_type = global_dict['experiment_type']
             print 'exp_type: {}'.format(self.exp_type)
 
-        if 'rate_str' in global_dict:
+        if not self.rate_str and 'rate_str' in global_dict:
             self.rate_str = global_dict['rate_str']
             print 'rate_str: {}'.format(self.rate_str)
 
-        if 'use_ECN' in global_dict:
+        if not self.use_ECN and 'use_ECN' in global_dict:
             self.use_ECN = global_dict['use_ECN']
             print 'use_ECN: {}'.format(self.use_ECN)
 
+    # getter functions
+    def getQueueLenLogPeri(self):
+        return self.queue_len_log_peri
 
 #c = Config('setting/base.json')

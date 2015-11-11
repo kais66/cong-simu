@@ -13,6 +13,7 @@ class BaseBufferManager(object):
         self._id = id
         self._buffers = {}  # id : buffer, id means differently in different context: next hop, or dst id
         self._simulator = simu
+        self._config = simu.getConfig()
         
         self._cur_byte = 0
         #self._MAX_BYTE = BaseBufferManager.MB_1 * 10
@@ -155,7 +156,7 @@ class LinkBufferManager(BaseBufferManager):
         self.initLoggerEvt()
 
     def initLoggerEvt(self):
-        periodicity = 200 # in milliseconds
+        periodicity = self._config.getQueueLenLogPeri()
 
         timestamp = 0.0
         evt = LogEvent(self._simulator, timestamp, self, periodicity)
