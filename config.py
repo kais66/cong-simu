@@ -75,19 +75,19 @@ class Config(object):
 
     def initJsonPara(self, json_data):
         global_dict = json_data['global']
-        if not self.queue_len_log_peri and 'queue_len_log_periodicity':
+        if self.queue_len_log_peri is None and 'queue_len_log_periodicity':
             self.queue_len_log_peri = int(global_dict['queue_len_log_periodicity'])
             print 'queue_len_log_periodicity: {}'.format(self.queue_len_log_peri)
 
-        if not self.exp_type and 'experiment_type' in global_dict:
+        if self.exp_type is None and 'experiment_type' in global_dict:
             self.exp_type = global_dict['experiment_type']
             print 'exp_type: {}'.format(self.exp_type)
 
-        if not self.rate_str and 'rate_str' in global_dict:
+        if self.rate_str is None and 'rate_str' in global_dict:
             self.rate_str = global_dict['rate_str']
             print 'rate_str: {}'.format(self.rate_str)
 
-        if not self.use_ECN and 'use_ECN' in global_dict:
+        if self.use_ECN is None and 'use_ECN' in global_dict:
             self.use_ECN = global_dict['use_ECN']
             print 'use_ECN: {}'.format(self.use_ECN)
 
