@@ -41,6 +41,9 @@ class DownStackEvt(Event):
             else:
                 print 'DownStackEvt: no chunk to be pushed down'
 
+        # trans_ts is the time when the chunk enters the link layer buffer
+        chunk.setTransTimestamp(self.timestamp())
+
         evt = TxStartEvt(self._simu, chunk.startTimestamp(), self._node.getBufManByDst(chunk.dst()))
         self._simu.enqueue(evt)
 
