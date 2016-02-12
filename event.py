@@ -91,6 +91,8 @@ class DownStackTBEvt(DownStackEvt):
             return
 
         chunk.updateTimestamp(self.timestamp())
+        # trans_ts is the time when the chunk enters the link layer buffer
+        chunk.setTransTimestamp(self.timestamp())
 
         if config.DEBUG:
             chunk.show()

@@ -9,8 +9,9 @@ class Chunk:
         self._src_id = src
         self._dst_id = dst
         self._cur_id = src
-        self._start_ts = ts # timestamp when the ultimate source pushes this chunk out
+        self._start_ts = ts # time of file sending request arrival at the application
         self._cur_ts = ts # anytime when this chunk is in the network
+        self._tx_ts = ts # timestamp when the ultimate source pushes this chunk out
 
         self._ecn_delay = 0.0 # this is the delay caused by ECN
 
@@ -69,6 +70,12 @@ class Chunk:
 
     def startTimestamp(self):
         return self._start_ts
+
+    def transTimestamp(self):
+        return self._tx_ts
+
+    def setTransTimestamp(self, trans_ts):
+        self._tx_ts = trans_ts
 
     def setExperiencedECNDelay(self, delay):
         self._ecn_delay = delay

@@ -154,7 +154,7 @@ class TrafficSink:
             print 'finish file size: {}'.format(chunk._file_size)
             for thisChk in file._chk_dict.values():
                 stat_list = [thisChk.id(), chunk.startTimestamp(),
-                    thisChk.timestamp(), thisChk.timestamp()-thisChk.startTimestamp(),
+                    thisChk.timestamp(), thisChk.timestamp()-thisChk.transTimestamp(),
                     chunk.src(), chunk.dst(), chunk._file_size, thisChk.size(),
                     thisChk.fileId()]
 
