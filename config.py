@@ -8,7 +8,7 @@ valid_val = {
     'topo_str':{'Small9',
                 'Abilene', 'Exodus', 'Att', 'Level3', 'Sprint' # rocketfuel
                 },
-    'traff_str':{'Equal', 'Skewed'}
+    'traff_str':{'Equal', 'Skewed', 'Full'}
 }
 
 class Config(object):

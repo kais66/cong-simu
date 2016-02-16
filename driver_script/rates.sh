@@ -10,6 +10,9 @@ Small9AllPairEqualRates=("0.5" "0.7" "0.9" "1.1" "1.3" "1.5")
 # abilene equal traffic
 AbileneEqualRates=("0.05" "0.35" "0.45" "0.55" "0.65")
 
+# abilene equal traffic, but with more rate values
+AbileneFullRates=("0.05" "0.35" "0.45" "0.55" "0.65" "0.8" "1.0")
+
 # exodus
 ExodusEqualRates=("0.05" "0.35" "0.45" "0.55" "0.65")
 

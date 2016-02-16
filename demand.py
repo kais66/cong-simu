@@ -51,7 +51,8 @@ class ArrivalTrace(object):
             demand_initializer = DemandEqual(self.topo_str, self.rate_bytepms)
         elif demand_init_str == 'AbileneEqual' or \
             demand_init_str == 'ExodusEqual' or \
-            demand_init_str == 'Level3Equal':
+            demand_init_str == 'Level3Equal' or \
+            demand_init_str == 'AbileneFull':
             demand_initializer = DemandEqual(self.topo_str, self.rate_bytepms)
             #self.topo_str = 'AbileneEqual'
 

@@ -10,6 +10,11 @@ cd ../
 #    python ./demand.py $i
 #done
 
-for thisRate in "${Level3EqualRates[@]}"; do
-    python ./gen_traffic.py Level3 Equal $thisRate
+# 
+for thisRate in "${AbileneFullRates[@]}"; do
+    python ./gen_traffic.py Abilene Full $thisRate
 done
+
+#for thisRate in "${Level3EqualRates[@]}"; do
+#    python ./gen_traffic.py Level3 Equal $thisRate
+#done
