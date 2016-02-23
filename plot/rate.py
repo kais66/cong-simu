@@ -16,8 +16,14 @@ class Small9List(object):
     def __init__(self):
         self.src_list = [1, 2]
         self.dst_list = [6, 7, 8, 9]
+
+class AbileneFullList(object):
+    def __init__(self):
+        self.src_list = [6]
+        self.dst_list = [4, 7, 8, 14]
+
 if __name__ == "__main__":
-    sd_list = AllSrcList()
+    sd_list = AbileneFullList()
     src_list = sd_list.src_list
     dst_list = sd_list.dst_list
 

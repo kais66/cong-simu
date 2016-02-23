@@ -71,7 +71,8 @@ class FairnessPlot(object):
 
 if __name__ == "__main__":
     topo_str = 'Abilene'
-    traff_str = 'Equal'
+    #traff_str = 'Equal'
+    traff_str = 'Full'
 
     #topo_str = 'Small9'
     p = FairnessPlot(topo_str, traff_str)

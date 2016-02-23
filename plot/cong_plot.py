@@ -16,8 +16,11 @@ rates_dic = {
     #'small_skewed':["0.5", "0.7", "0.9", "1.1", "1.3", "1.5", "1.7", "2.0"],
     'Small9Skewed':["0.5", "0.7", "0.9", "1.1", "1.3", "1.5", "2.0"],
     'Small9Equal':["0.5", "0.7", "0.9", "1.1", "1.3", "1.5", "2.0"],
+    'Small5Equal':["1.0", "2.0", "4.0", "6.0", "9.0"],
     'Small9AllPairEqual':["0.5", "0.7", "0.9", "1.1", "1.3", "1.5"],
     'AbileneEqual':["0.05", "0.35", "0.45", "0.55", "0.65"],
+    #'AbileneFull':["0.05", "0.35", "0.45", "0.55", "0.65", "0.8", "1.0"],
+    'AbileneFull':["0.8", "1.0", "2.0", "3.0", "4.0", "6.0", "9.0"],
     'ExodusEqual':["0.05", "0.35", "0.45", "0.55", "0.65"]
 }
 
@@ -335,6 +338,12 @@ class ThroughputData(object):
 
     def dstThroughput(self, dst):
         valid_entries = self.array[self.array[:, self.reader.DST_POS] == dst]
+        #if dst==6: print valid_entries.tolist()
+        return self.overallThroughput(valid_entries)
+
+    def pairThroughput(self, src, dst):
+        filtered = self.array[self.array[:, self.reader.SRC_POS] == src]
+        valid_entries = filtered[filtered[:, self.reader.DST_POS] == dst]
         #if dst==6: print valid_entries.tolist()
         return self.overallThroughput(valid_entries)
 

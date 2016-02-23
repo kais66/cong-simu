@@ -13,5 +13,6 @@ if __name__ == "__main__":
 
     #plt = ResponseTimePlot('ExodusEqual')
     #plt = ResponseTimePlot('AbileneEqual')
+    plt = ResponseTimePlot('AbileneFull')
     #plt = ResponseTimePlot('Small9AllPairEqual')
-    plt = ResponseTimePlot('Small9Skewed')
+    #plt = ResponseTimePlot('Small9Skewed')
