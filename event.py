@@ -29,7 +29,7 @@ class DownStackEvt(Event):
             print '\n=== begin DownStackEvt: executing, time: %f' % (self._timestamp)
 
         # see if the app buffer is currently blocked, 
-        if not self._node.src:
+        if self._node.src is None:
             raise AttributeError('node.src is None')
 
 
