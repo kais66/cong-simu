@@ -178,6 +178,7 @@ class TxStartEvt(Event):
     def __init__(self, simu, timestamp, buf_man):
         super(TxStartEvt, self).__init__(simu, timestamp)
         self._buf_man = buf_man
+        self._logger = self._simu.utilLogger()
 
     def execute(self):
         buf_id = self._buf_man.schedBuffer()
@@ -214,6 +215,13 @@ class TxStartEvt(Event):
         self._buf_man._tx_until = self._timestamp + tx_time
         te_evt = TxEndEvt(self._simu, self._timestamp + tx_time, self._buf_man, buf_id)
         self._simu.enqueue(te_evt)
+
+        # because we're sure that the chunk has been transmitted, the link has to be occupied
+        # during that peirod of time. So log that utilized period.
+        # [node_id, buf_man_id, tx_start_time, tx_end_time, length]
+        stat_list = [self._buf_man._node.id(), self._buf_man.id(), \
+                     self.timestamp(), self._timestamp + tx_time, tx_time]
+        self._logger.log(stat_list)
 
         if config.DEBUG:
             print '=== TxStartEvt: scheduled RxStart at {} and TxEnd at {}'.format(
